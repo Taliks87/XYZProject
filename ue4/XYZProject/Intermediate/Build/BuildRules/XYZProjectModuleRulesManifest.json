@@ -1,0 +1,8 @@
+{
+	"SourceFiles": [
+		"C:\\work\\PerforceWorkspace\\EnginerLocalPcLessons\\XYZProject\\ue4\\XYZProject\\Source\\XYZProject\\XYZProject.Build.cs",
+		"C:\\work\\PerforceWorkspace\\EnginerLocalPcLessons\\XYZProject\\ue4\\XYZProject\\Source\\XYZProject.Target.cs",
+		"C:\\work\\PerforceWorkspace\\EnginerLocalPcLessons\\XYZProject\\ue4\\XYZProject\\Source\\XYZProjectEditor.Target.cs"
+	],
+	"EngineVersion": "4.25.4"
+}
