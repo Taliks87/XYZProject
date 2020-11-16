@@ -42,28 +42,26 @@ void ABasePlatform::MovePlatform()
 }
 
  void ABasePlatform::MoveRequest(EPlatformMoveDirection Direction)
- {
-	if (MotionTimeline.IsPlaying())
-	{
-		return;
-	}
-	
+ {	
 	if (!bMovingForward && Direction != EPlatformMoveDirection::Backward)
 	{
 		MotionTimeline.SetPlayRate(ForwardMovingRate);
 		MotionTimeline.Play();
 		bMovingForward = true;
+		if (OnPlatformMoved.IsBound())
+		{
+			OnPlatformMoved.Broadcast();
+		}
 	}
 	else if (bMovingForward && Direction != EPlatformMoveDirection::Forward)
 	{
 		MotionTimeline.SetPlayRate(BackwardMovingRate);
 		MotionTimeline.Reverse();
 		bMovingForward = false;
-	}
-
-	if (OnPlatformMoved.IsBound())
-	{
-		OnPlatformMoved.Broadcast();
+		if (OnPlatformMoved.IsBound())
+		{
+			OnPlatformMoved.Broadcast();
+		}
 	}
  }
 
