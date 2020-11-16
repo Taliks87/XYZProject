@@ -51,7 +51,7 @@ private:
 	void StartTimerDelayMovement();
 
 protected:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Platform settings")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Platform settings")
 	UStaticMeshComponent* PlatformMeshComponent;
 
 	UPROPERTY(EditInstanceOnly, BlueprintReadOnly, Category = "Platform settings", meta = (MakeEditWidget))
@@ -78,8 +78,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Platform settings", meta = (UIMin = 0.0f, ClampMin = 0.0f))
 	float MotionDelay = 1.0f;
 
-private:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Platform settings")
 	bool bMovingForward = false;
+
+private:	
 	FTimerHandle MotionDelayTimer;
 	FTimeline MotionTimeline;
 };
