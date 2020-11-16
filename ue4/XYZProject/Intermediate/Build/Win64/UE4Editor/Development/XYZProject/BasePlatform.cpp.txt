@@ -1,5 +1,0 @@
-C:\work\PerforceWorkspace\EnginerLocalPcLessons\XYZProject\ue4\XYZProject\Intermediate\Build\Win64\UE4Editor\Development\XYZProject\Definitions.XYZProject.h
-C:\work\PerforceWorkspace\EnginerLocalPcLessons\XYZProject\ue4\XYZProject\Source\XYZProject\Placeables\Platform\BasePlatform.h
-C:\Program Files\Epic Games\UE_4.25\Engine\Source\Runtime\Engine\Classes\Components/TimelineComponent.h
-C:\Program Files\Epic Games\UE_4.25\Engine\Intermediate\Build\Win64\UE4Editor\Inc\Engine\TimelineComponent.generated.h
-C:\work\PerforceWorkspace\EnginerLocalPcLessons\XYZProject\ue4\XYZProject\Intermediate\Build\Win64\UE4Editor\Inc\XYZProject\BasePlatform.generated.h
