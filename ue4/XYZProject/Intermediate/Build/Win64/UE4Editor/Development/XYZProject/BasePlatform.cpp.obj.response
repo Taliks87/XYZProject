@@ -264,7 +264,7 @@
 /FI"C:\work\PerforceWorkspace\EnginerLocalPcLessons\XYZProject\ue4\XYZProject\Intermediate\Build\Win64\XYZProjectEditor\Development\Engine\SharedPCH.Engine.ShadowErrors.h"
 /Yu"C:\work\PerforceWorkspace\EnginerLocalPcLessons\XYZProject\ue4\XYZProject\Intermediate\Build\Win64\XYZProjectEditor\Development\Engine\SharedPCH.Engine.ShadowErrors.h"
 /Fp"C:\work\PerforceWorkspace\EnginerLocalPcLessons\XYZProject\ue4\XYZProject\Intermediate\Build\Win64\XYZProjectEditor\Development\Engine\SharedPCH.Engine.ShadowErrors.h.pch"
-"C:\work\PerforceWorkspace\EnginerLocalPcLessons\XYZProject\ue4\XYZProject\Source\XYZProject\Core\Interactables\BasePlatform.cpp"
+"C:\work\PerforceWorkspace\EnginerLocalPcLessons\XYZProject\ue4\XYZProject\Source\XYZProject\Placeables\Platform\BasePlatform.cpp"
 /FI"C:\work\PerforceWorkspace\EnginerLocalPcLessons\XYZProject\ue4\XYZProject\Intermediate\Build\Win64\UE4Editor\Development\XYZProject\Definitions.XYZProject.h"
 /Fo"C:\work\PerforceWorkspace\EnginerLocalPcLessons\XYZProject\ue4\XYZProject\Intermediate\Build\Win64\UE4Editor\Development\XYZProject\BasePlatform.cpp.obj"
 /TP
