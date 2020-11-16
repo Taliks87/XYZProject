@@ -2,11 +2,13 @@
 
 
 #include "GameCodeBasePawn.h"
+
 #include "Components/SphereComponent.h"
 #include "Engine/CollisionProfile.h"
+#include "Kismet/GameplayStatics.h"
 
-#include "GameFramework/FloatingPawnMovement.h"
-#include "../Components/MovementComponents/GCBasePawnMovementComponent.h"
+#include "XYZProject/XYZProject.h"
+#include "XYZProject/Components/MovementComponents/GCBasePawnMovementComponent.h"
 
 // Sets default values
 AGameCodeBasePawn::AGameCodeBasePawn()
@@ -16,7 +18,6 @@ AGameCodeBasePawn::AGameCodeBasePawn()
 	CollisionComponent->SetCollisionProfileName(UCollisionProfile::Pawn_ProfileName);
 	RootComponent = CollisionComponent;
 
-	//MovementComponent = CreateDefaultSubobject<UPawnMovementComponent, UFloatingPawnMovement>(TEXT("Movement component"));
 	MovementComponent = CreateDefaultSubobject<UPawnMovementComponent, UGCBasePawnMovementComponent>(TEXT("Movement component"));
 	MovementComponent->SetUpdatedComponent(CollisionComponent);
 }
@@ -29,13 +30,15 @@ void AGameCodeBasePawn::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 	PlayerInputComponent->BindAxis("LookUp", this, &APawn::AddControllerPitchInput);
 	PlayerInputComponent->BindAxis("MoveForward", this, &AGameCodeBasePawn::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &AGameCodeBasePawn::MoveRight);
+	PlayerInputComponent->BindAction("Jump", EInputEvent::IE_Pressed, this, &AGameCodeBasePawn::Jump);
+	
 }
 
 void AGameCodeBasePawn::MoveForward(float Value)
 {
 	if (Value != 0.0f)
 	{
-		AddMovementInput(GetActorForwardVector(), Value);
+		AddMovementInput(CurrentViewActor->GetActorForwardVector(), Value);
 	}
 }
 
@@ -43,7 +46,28 @@ void AGameCodeBasePawn::MoveRight(float Value)
 {
 	if (Value != 0.0f)
 	{
-		AddMovementInput(GetActorRightVector(), Value);
+		AddMovementInput(CurrentViewActor->GetActorRightVector(), Value);
 	}
+}
+
+void AGameCodeBasePawn::Jump()
+{
+	checkf(MovementComponent->IsA<UGCBasePawnMovementComponent>(), TEXT("Jump can work only with UGCBasePawnMovmentComponent"));
+	UGCBasePawnMovementComponent* BaseMovement = StaticCast<UGCBasePawnMovementComponent*>(MovementComponent);
+	BaseMovement->JumpStart();
+}
+
+void AGameCodeBasePawn::BeginPlay()
+{
+	Super::BeginPlay();
+	APlayerCameraManager* CameraManager = UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0);
+	CameraManager->OnBlendComplete().AddUFunction(this, FName("OnBlendComplete"));
+	CurrentViewActor = CameraManager->GetViewTarget();
+}
+
+void AGameCodeBasePawn::OnBlendComplete()
+{
+	CurrentViewActor = GetController()->GetViewTarget();
+	UE_LOG(LogCameras, Verbose, TEXT("AGameCodeBasePawn::OnBlendComplete() Current view actor: %s"), *CurrentViewActor->GetName());
 }
 

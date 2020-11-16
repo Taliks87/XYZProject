@@ -16,13 +16,20 @@ class XYZPROJECT_API UGCBasePawnMovementComponent : public UPawnMovementComponen
 
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
+public:
+	void JumpStart();
+
 protected:
 	UPROPERTY(EditAnywhere)
 	float MaxSpeed = 1200.0f;
+
+	UPROPERTY(EditAnywhere)
+	float InitialJumpVelocity = 500.0f;
 
 	UPROPERTY(EditAnywhere)
 	bool bEnableGravity;
 	
 private:
 	FVector VerticalVelocity = FVector::ZeroVector;
+	bool bIsFalling = false;
 };
