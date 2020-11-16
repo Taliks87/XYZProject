@@ -3,7 +3,7 @@
 
 APlatformInvocator::APlatformInvocator()
 { 	
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 	BoxCollisionComponent = CreateDefaultSubobject<UBoxComponent>(TEXT("BoxColision"));
 	BoxCollisionComponent->SetBoxExtent(FVector(100.0f,100.0f,100.0f), true);
 	BoxCollisionComponent->SetCollisionObjectType(ECC_WorldStatic);

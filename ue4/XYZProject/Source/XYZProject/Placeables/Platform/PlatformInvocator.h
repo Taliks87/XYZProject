@@ -30,5 +30,5 @@ protected:
 	class ABasePlatform* Platform = nullptr;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Settings")
-	EPlatformMoveDirection MoveDirection = EPlatformMoveDirection::Anywhere;
+	EPlatformMoveDirection MoveDirection;
 };
