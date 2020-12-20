@@ -19,6 +19,8 @@ class XYZPROJECT_API UGCBasePawnMovementComponent : public UPawnMovementComponen
 public:
 	void JumpStart();
 
+	virtual bool IsFalling() const override;
+
 protected:
 	UPROPERTY(EditAnywhere)
 	float MaxSpeed = 1200.0f;

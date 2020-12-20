@@ -65,3 +65,8 @@ void UGCBasePawnMovementComponent::JumpStart()
         VerticalVelocity = InitialJumpVelocity * FVector::UpVector;    
     }    
 }
+
+bool UGCBasePawnMovementComponent::IsFalling() const
+{
+    return bIsFalling;
+}
