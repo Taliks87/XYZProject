@@ -8,7 +8,8 @@
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
-APlayerCharacter::APlayerCharacter()
+APlayerCharacter::APlayerCharacter(const FObjectInitializer& ObjectInitializer)
+	: AGCBaseCharacter(ObjectInitializer)
 {
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationYaw = false;
@@ -23,6 +24,24 @@ APlayerCharacter::APlayerCharacter()
 
 	GetCharacterMovement()->bOrientRotationToMovement = 1;
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 540.0f, 0.0f);
+}
+
+void APlayerCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+	DefaultSpringArmLength = SpringArmComponent->TargetArmLength;
+	if(SprintSpringArmCurve)
+	{
+		FOnTimelineFloat TimelineCallback;
+		TimelineCallback.BindUFunction(this, FName("UpdateSpringArmLength"));
+		SprintSpringArmTimeline.AddInterpFloat(SprintSpringArmCurve, TimelineCallback);		
+	}
+}
+
+void APlayerCharacter::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+	SprintSpringArmTimeline.TickTimeline(DeltaSeconds);
 }
 
 void APlayerCharacter::MoveForward(float Value)
@@ -95,4 +114,19 @@ void APlayerCharacter::OnJumped_Implementation()
 	{
 		UnCrouch();
 	}
+}
+
+void APlayerCharacter::OnSprintStart_Implementation()
+{
+	SprintSpringArmTimeline.Play();
+}
+
+void APlayerCharacter::OnSprintEnd_Implementation()
+{
+	SprintSpringArmTimeline.Reverse();
+}
+
+void APlayerCharacter::UpdateSpringArmLength(float Value)
+{
+	SpringArmComponent->TargetArmLength = FMath::Lerp(DefaultSpringArmLength, SprintSpringArmLength, Value);
 }
