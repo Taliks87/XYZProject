@@ -30,7 +30,13 @@ public:
 
 	virtual void Tick(float DeltaTime) override;
 
-	FORCEINLINE UGCBaseCharacterMovementComponent* GetBaseCharacterMovementComponent() const { return GCBaseCharacterMovementComponent; }	
+	FORCEINLINE UGCBaseCharacterMovementComponent* GetBaseCharacterMovementComponent() const { return GCBaseCharacterMovementComponent; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure)
+	FORCEINLINE float GetIKRightFootOffset() const { return IKRightFootOffset; }
+
+	UFUNCTION(BlueprintCallable, BlueprintPure)
+	FORCEINLINE float GetIKLeftFootOffset() const {	return IKLeftFootOffset; }
 
 protected:
 
@@ -51,12 +57,30 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character | Movement")
 	float SprintSpeed = 800.0f;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character | IK Settings")
+	FName RightFootSocketName;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character | IK Settings")
+	FName LeftFootSocketName;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character | IK settings", meta = (ClampMin = 0.0f, UIMin = 0.0f))
+	float IKTraceExtendDistance = 30.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character | IK settings", meta = (ClampMin = 0.0f, UIMin = 0.0f))
+	float IKInterpSpeed = 20.0f;
+
 	virtual bool CanSprint() const;
 
 	UGCBaseCharacterMovementComponent* GCBaseCharacterMovementComponent;
 
 private:
 	void TryChangeSprintState();
+	float GetIKOffsetForASocket(const FName& SocketName) const;
 	
 	bool bIsSprintRequested;
+	
+	float IKRightFootOffset = 0.0f;
+	float IKLeftFootOffset = 0.0f;
+	float IKTraceDistance = 0.0f;
+	float IKScale = 0.0f;
 };

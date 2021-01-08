@@ -6,6 +6,7 @@
 #include "XYZProject/Characters/GCBaseCharacter.h"
 #include "XYZProject/Components/MovementComponents/GCBaseCharacterMovementComponent.h"
 
+
 void UGCBaseCharacterAnimInstance::NativeBeginPlay()
 {
 	Super::NativeBeginPlay();
@@ -26,4 +27,7 @@ void UGCBaseCharacterAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	bIsFalling = CharacterMovement->IsFalling();
 	bIsCrouching = CharacterMovement->IsCrouching();
 	bIsSprinting = CharacterMovement->IsSprinting();
+
+	RightFootEffectorLocation = FVector(CachedBaseCharacter->GetIKRightFootOffset(), 0.0f, 0.0f);
+	LeftFootEffectorLocation = FVector( - CachedBaseCharacter->GetIKLeftFootOffset(), 0.0f, 0.0f);	
 }

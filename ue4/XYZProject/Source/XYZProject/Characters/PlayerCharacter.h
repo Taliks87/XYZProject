@@ -43,13 +43,13 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character | Camera")
 	class USpringArmComponent* SpringArmComponent;	
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character | SprintSettings", meta = (ClampMin = 0.0f, UIMin = 0.0f))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character | Sprint Settings", meta = (ClampMin = 0.0f, UIMin = 0.0f))
 	float SprintSpringArmLength = 400.0f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character | SprintSettings")
-	UCurveFloat* SprintSpringArmCurve = nullptr;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character | Sprint Settings")
+	UCurveFloat* SprintSpringArmCurve = nullptr;	
 
-private:
+private:	
 	float DefaultSpringArmLength;	
 	FTimeline SprintSpringArmTimeline;
 };
