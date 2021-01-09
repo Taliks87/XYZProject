@@ -29,6 +29,7 @@ public:
 	virtual void StopSprint();
 
 	virtual void Tick(float DeltaTime) override;
+	virtual void BeginPlay() override;
 
 	FORCEINLINE UGCBaseCharacterMovementComponent* GetBaseCharacterMovementComponent() const { return GCBaseCharacterMovementComponent; }
 
@@ -57,6 +58,15 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character | Movement")
 	float SprintSpeed = 800.0f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character | Movement", meta = (ClampMin = 0.0f, UIMin = 0.0f))
+	float MaxStamina = 100.0f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character | Movement", meta = (ClampMin = 0.0001f, UIMin = 0.0001f))
+	float StaminaRestoreVelocity = 20.0f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character | Movement", meta = (ClampMin = 0.0001f, UIMin = 0.0001f))
+	float SprintStaminaConsumptionVelocity = 20.0f;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character | IK Settings")
 	FName RightFootSocketName;
 
@@ -74,13 +84,15 @@ protected:
 	UGCBaseCharacterMovementComponent* GCBaseCharacterMovementComponent;
 
 private:
-	void TryChangeSprintState();
 	float GetIKOffsetForASocket(const FName& SocketName) const;
-	
+	void TryChangeSprintState(float DeltaTime);
+		
 	bool bIsSprintRequested;
 	
 	float IKRightFootOffset = 0.0f;
 	float IKLeftFootOffset = 0.0f;
 	float IKTraceDistance = 0.0f;
 	float IKScale = 0.0f;
+
+	float CurrentStamina = 0.0f;
 };

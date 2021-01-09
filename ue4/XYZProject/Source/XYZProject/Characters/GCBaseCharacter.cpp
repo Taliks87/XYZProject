@@ -46,31 +46,36 @@ void AGCBaseCharacter::StopSprint()
 
 void AGCBaseCharacter::Tick(float DeltaTime)
 {
-	Super::Tick(DeltaTime);
-	TryChangeSprintState();
+	Super::Tick(DeltaTime);	
 
 	IKRightFootOffset = FMath::FInterpTo(IKRightFootOffset, GetIKOffsetForASocket(RightFootSocketName), DeltaTime, IKInterpSpeed);
 	IKLeftFootOffset = FMath::FInterpTo(IKLeftFootOffset, GetIKOffsetForASocket(LeftFootSocketName), DeltaTime, IKInterpSpeed);
+
+	if(!GCBaseCharacterMovementComponent->IsSprinting())
+	{
+		CurrentStamina += StaminaRestoreVelocity * DeltaTime;
+		CurrentStamina = FMath::Clamp(CurrentStamina, 0.0f, MaxStamina);
+		if(CurrentStamina == MaxStamina)
+		{
+			GCBaseCharacterMovementComponent->SetIsOutOfStamina(false);
+		}				
+	}
+	TryChangeSprintState(DeltaTime);
+	if(CurrentStamina != MaxStamina && GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(1, 1.0f, FColor::Yellow, FString::Printf(TEXT("Stamina: %.2f"), CurrentStamina));	
+	}	
+}
+
+void AGCBaseCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+	CurrentStamina = MaxStamina;
 }
 
 bool AGCBaseCharacter::CanSprint() const
 {
 	return true;
-}
-
-void AGCBaseCharacter::TryChangeSprintState()
-{
-	if(bIsSprintRequested && !GCBaseCharacterMovementComponent->IsSprinting() && CanSprint())
-	{
-		GCBaseCharacterMovementComponent->StartSprint();
-		OnSprintStart();
-	}
-
-	if(!bIsSprintRequested && GCBaseCharacterMovementComponent->IsSprinting())
-	{
-		GCBaseCharacterMovementComponent->StopSprint();
-		OnSprintEnd();
-	}	
 }
 
 float AGCBaseCharacter::GetIKOffsetForASocket(const FName& SocketName) const
@@ -88,4 +93,29 @@ float AGCBaseCharacter::GetIKOffsetForASocket(const FName& SocketName) const
 	 	Result = (TraceEnd.Z - HitResult.Location.Z) / IKScale + IKTraceExtendDistance;
 	}
 	return Result;
+}
+
+void AGCBaseCharacter::TryChangeSprintState(float DeltaTime)
+{
+	const bool IsSprinting = GCBaseCharacterMovementComponent->IsSprinting();
+	if(bIsSprintRequested && !IsSprinting && CanSprint())
+	{
+		GCBaseCharacterMovementComponent->StartSprint();
+		OnSprintStart();
+	}	
+	
+	if (IsSprinting)
+	{
+		if(!bIsSprintRequested)
+		{
+			GCBaseCharacterMovementComponent->StopSprint();
+			OnSprintEnd();
+		}	
+		CurrentStamina -= SprintStaminaConsumptionVelocity * DeltaTime;
+		CurrentStamina = FMath::Clamp(CurrentStamina, 0.0f, MaxStamina);		
+		if(CurrentStamina == 0.0f)
+		{
+			GCBaseCharacterMovementComponent->SetIsOutOfStamina(true);
+		}
+	}	
 }
