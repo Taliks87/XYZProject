@@ -3,12 +3,13 @@
 
 #include "GCBaseCharacter.h"
 
-
+#include "GeneratedCodeHelpers.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "XYZProject/Components/MovementComponents/GCBaseCharacterMovementComponent.h"
 
+DEFINE_LOG_CATEGORY_STATIC(LogCharacter, Log, All);
 
 AGCBaseCharacter::AGCBaseCharacter(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer.SetDefaultSubobjectClass<UGCBaseCharacterMovementComponent>(ACharacter::CharacterMovementComponentName))
@@ -18,16 +19,44 @@ AGCBaseCharacter::AGCBaseCharacter(const FObjectInitializer& ObjectInitializer)
 	IKTraceDistance = GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
 }
 
+void AGCBaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME_CONDITION( AGCBaseCharacter, bIsProned, COND_SimulatedOnly );
+}
+
 void AGCBaseCharacter::ChangeCrouchState()
 {
-	if(GetCharacterMovement()->IsCrouching())
+	const bool bCanEverProne = GCBaseCharacterMovementComponent->CanEverProne();
+	const bool bIsCrouching = GetCharacterMovement()->IsCrouching();
+	if(bCanEverProne)
 	{
-		UnCrouch();
+		if ( GCBaseCharacterMovementComponent->IsProning() || !bIsCrouching ) 
+		{		
+			Crouch();		
+		}	
+	} else {
+		if(bIsCrouching)
+		{
+			Crouch();		
+		} else {
+			UnCrouch();
+		}	 
 	}
-	else
+}
+
+void AGCBaseCharacter::ChangeProneState()
+{
+	if(GCBaseCharacterMovementComponent->IsProning())
 	{
-		Crouch();
-	}	
+		UnProne();
+		return;
+	}
+	if(GetCharacterMovement()->CanEverCrouch() && GetCharacterMovement()->IsCrouching())
+	{		
+		Prone();						
+	} 
+		
 }
 
 void AGCBaseCharacter::StartSprint()
@@ -62,6 +91,62 @@ void AGCBaseCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	CurrentStamina = MaxStamina;
+}
+
+void AGCBaseCharacter::OnRep_IsProned()
+{
+	if (GCBaseCharacterMovementComponent)
+	{
+		if (bIsProned)
+		{
+			GCBaseCharacterMovementComponent->bWantsToCrouch = true;
+			GCBaseCharacterMovementComponent->Prone(true);
+		}
+		else
+		{
+			GCBaseCharacterMovementComponent->bWantsToCrouch = false;
+			GCBaseCharacterMovementComponent->UnProne(true);
+		}
+		GCBaseCharacterMovementComponent->bNetworkUpdateReceived = true;
+	}
+}
+
+void AGCBaseCharacter::OnEndProne(float HalfHeightAdjust, float ScaledHalfHeightAdjust)
+{
+}
+
+void AGCBaseCharacter::OnStartProne(float HalfHeightAdjust, float ScaledHalfHeightAdjust)
+{
+}
+
+void AGCBaseCharacter::Prone(bool bClientSimulation)
+{
+	if (GCBaseCharacterMovementComponent)
+	{
+		if (CanProne())
+		{
+			GCBaseCharacterMovementComponent->bWantsToProne = true;
+		}
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+		else if (!GCBaseCharacterMovementComponent->CanEverProne())
+		{
+			UE_LOG(LogCharacter, Log, TEXT("%s is trying to prone, but proning is disabled on this character! (check CharacterMovement NavAgentSettings)"), *GetName());
+		}
+#endif
+	}
+}
+
+void AGCBaseCharacter::UnProne(bool bClientSimulation)
+{
+	if (GCBaseCharacterMovementComponent)
+	{
+		GCBaseCharacterMovementComponent->bWantsToProne = false;
+	}
+}
+
+bool AGCBaseCharacter::CanProne() const
+{
+	return bIsCrouched && !bIsProned && GCBaseCharacterMovementComponent && GCBaseCharacterMovementComponent->CanEverProne() && GetRootComponent() && !GetRootComponent()->IsSimulatingPhysics();
 }
 
 bool AGCBaseCharacter::CanSprint() const

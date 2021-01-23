@@ -5,9 +5,7 @@
 
 #include "GCBaseCharacter.generated.h"
 
-
 class UGCBaseCharacterMovementComponent;
-
 
 UCLASS(Abstract, NotBlueprintable)
 class XYZPROJECT_API AGCBaseCharacter : public ACharacter
@@ -16,6 +14,8 @@ class XYZPROJECT_API AGCBaseCharacter : public ACharacter
 
 public:
 	AGCBaseCharacter(const FObjectInitializer& ObjectInitializer);
+
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	
 	virtual void MoveForward(float Value) {};
 	virtual void MoveRight(float Value) {};
@@ -25,6 +25,7 @@ public:
 	virtual void LookUpAtRate(float Value) {};
 
 	virtual void ChangeCrouchState();
+	virtual void ChangeProneState();
 	virtual void StartSprint();
 	virtual void StopSprint();
 
@@ -38,6 +39,25 @@ public:
 
 	UFUNCTION(BlueprintCallable, BlueprintPure)
 	FORCEINLINE float GetIKLeftFootOffset() const {	return IKLeftFootOffset; }
+
+	UFUNCTION()
+	virtual void OnRep_IsProned();
+
+	virtual void OnEndProne(float HalfHeightAdjust, float ScaledHalfHeightAdjust);
+
+	virtual void OnStartProne(float HalfHeightAdjust, float ScaledHalfHeightAdjust);
+
+	UFUNCTION(BlueprintCallable, Category=Character, meta=(HidePin="bClientSimulation"))
+    virtual void Prone(bool bClientSimulation = false);
+
+	UFUNCTION(BlueprintCallable, Category=Character, meta=(HidePin="bClientSimulation"))
+    virtual void UnProne(bool bClientSimulation = false);
+
+	UFUNCTION(BlueprintCallable, Category=Character)
+	virtual bool CanProne() const;	
+
+	UPROPERTY(BlueprintReadOnly, replicatedUsing=OnRep_IsProned, Category=Character)	
+	uint32 bIsProned:1;
 
 protected:
 

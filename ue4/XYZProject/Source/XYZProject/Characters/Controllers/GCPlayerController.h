@@ -28,6 +28,7 @@ private:
 	void TurnAtRate(float Value);
 	void LookUpAtRate(float Value);
 	void ChangeCrouchState();
+	void ChangeProneState();
 	void Jump();
 
 	void StartSprint();
