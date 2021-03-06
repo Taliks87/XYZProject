@@ -51,16 +51,7 @@ void AGCBaseCharacter::Tick(float DeltaTime)
 	IKRightFootOffset = FMath::FInterpTo(IKRightFootOffset, GetIKOffsetForASocket(RightFootSocketName), DeltaTime, IKInterpSpeed);
 	IKLeftFootOffset = FMath::FInterpTo(IKLeftFootOffset, GetIKOffsetForASocket(LeftFootSocketName), DeltaTime, IKInterpSpeed);
 
-	if(!GCBaseCharacterMovementComponent->IsSprinting())
-	{
-		CurrentStamina += StaminaRestoreVelocity * DeltaTime;
-		CurrentStamina = FMath::Clamp(CurrentStamina, 0.0f, MaxStamina);
-		if(CurrentStamina == MaxStamina)
-		{
-			GCBaseCharacterMovementComponent->SetIsOutOfStamina(false);
-		}				
-	}
-	TryChangeSprintState(DeltaTime);
+	RefreshStamina(DeltaTime);
 	if(CurrentStamina != MaxStamina && GEngine)
 	{
 		GEngine->AddOnScreenDebugMessage(1, 1.0f, FColor::Yellow, FString::Printf(TEXT("Stamina: %.2f"), CurrentStamina));	
@@ -95,27 +86,33 @@ float AGCBaseCharacter::GetIKOffsetForASocket(const FName& SocketName) const
 	return Result;
 }
 
-void AGCBaseCharacter::TryChangeSprintState(float DeltaTime)
+void AGCBaseCharacter::RefreshStamina(float DeltaTime)
 {
 	const bool IsSprinting = GCBaseCharacterMovementComponent->IsSprinting();
-	if(bIsSprintRequested && !IsSprinting && CanSprint())
-	{
-		GCBaseCharacterMovementComponent->StartSprint();
-		OnSprintStart();
-	}	
-	
 	if (IsSprinting)
 	{
-		if(!bIsSprintRequested)
-		{
-			GCBaseCharacterMovementComponent->StopSprint();
-			OnSprintEnd();
-		}	
 		CurrentStamina -= SprintStaminaConsumptionVelocity * DeltaTime;
 		CurrentStamina = FMath::Clamp(CurrentStamina, 0.0f, MaxStamina);		
 		if(CurrentStamina == 0.0f)
 		{
 			GCBaseCharacterMovementComponent->SetIsOutOfStamina(true);
 		}
+		if(!bIsSprintRequested)
+		{
+			GCBaseCharacterMovementComponent->StopSprint();
+			OnSprintEnd();
+		}	
+	} else {
+		CurrentStamina += StaminaRestoreVelocity * DeltaTime;
+		CurrentStamina = FMath::Clamp(CurrentStamina, 0.0f, MaxStamina);
+		if(CurrentStamina == MaxStamina)
+		{
+			GCBaseCharacterMovementComponent->SetIsOutOfStamina(false);
+		}				
+		if(bIsSprintRequested && CanSprint())
+		{
+			GCBaseCharacterMovementComponent->StartSprint();
+			OnSprintStart();
+		}	
 	}	
 }

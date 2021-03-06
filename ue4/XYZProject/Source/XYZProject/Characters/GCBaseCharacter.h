@@ -85,7 +85,7 @@ protected:
 
 private:
 	float GetIKOffsetForASocket(const FName& SocketName) const;
-	void TryChangeSprintState(float DeltaTime);
+	void RefreshStamina(float DeltaTime);
 		
 	bool bIsSprintRequested;
 	
