@@ -29,6 +29,9 @@ protected:
 	bool bIsCrouching = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character animation")
+	bool bIsProning = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character animation")
 	bool bIsSprinting = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character animation")

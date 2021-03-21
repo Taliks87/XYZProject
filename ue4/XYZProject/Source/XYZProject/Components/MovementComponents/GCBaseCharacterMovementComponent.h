@@ -17,16 +17,17 @@ class XYZPROJECT_API UGCBaseCharacterMovementComponent : public UCharacterMoveme
 public:
 	virtual void BeginPlay() override;
 	virtual void PostLoad() override;
+	virtual void SetUpdatedComponent(USceneComponent* NewUpdatedComponent) override;
 	FORCEINLINE bool IsSprinting() const { return bIsSprinting;	}
 	virtual float GetMaxSpeed() const override;
 	virtual bool CanAttemptJump() const override;
 	virtual void UpdateCharacterStateBeforeMovement(float DeltaSeconds) override;
 
-	virtual void Crouch(bool bClientSimulation = false) override;
-	virtual void UnCrouch(bool bClientSimulation = false) override;
+	virtual void Crouch(bool bClientSimulation = false) override;//stand to crouch
+	virtual void UnCrouch(bool bClientSimulation = false) override;//crouch to stand
 	
-	virtual void Prone(bool bClientSimulation = false);
-	virtual void UnProne(bool bClientSimulation = false);
+	virtual void CrouchToProne(bool bClientSimulation = false);
+	virtual void ProneToCrouch(bool bClientSimulation = false);
 	virtual bool IsProning() const;	
 
 	void StartSprint();
@@ -55,13 +56,16 @@ protected:
 	bool bIsOutOfStamina = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character movement: sprint", meta = (ClampMin = 0.0f, UIMin = 0.0f))
-	float OutOfStaminaSpeed = 200.0f;
+	float OutOfStaminaSpeed = 150.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character movement: prone", meta = (ClampMin = 0.0001f, UIMin = 0.0001f))
 	float ProneCapsuleRadius = 40.0f;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character movement: prone", meta = (ClampMin = 0.0001f, UIMin = 0.0001f))
 	float ProneCapsuleHalfHeight = 40.0f;
+	
+	UPROPERTY(Category="Character Movement: Walking", EditAnywhere, BlueprintReadWrite, meta=(ClampMin="0", UIMin="0"))
+	float MaxProneSpeed = 100.0f;
 
 	class AGCBaseCharacter* GCBaseCharacterOwner;
 

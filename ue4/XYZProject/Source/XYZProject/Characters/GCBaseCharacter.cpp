@@ -3,8 +3,10 @@
 
 #include "GCBaseCharacter.h"
 
+#include "DisplayDebugHelpers.h"
 #include "GeneratedCodeHelpers.h"
 #include "Components/CapsuleComponent.h"
+#include "Engine/Canvas.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "XYZProject/Components/MovementComponents/GCBaseCharacterMovementComponent.h"
@@ -31,32 +33,38 @@ void AGCBaseCharacter::ChangeCrouchState()
 	const bool bIsCrouching = GetCharacterMovement()->IsCrouching();
 	if(bCanEverProne)
 	{
-		if ( GCBaseCharacterMovementComponent->IsProning() || !bIsCrouching ) 
-		{		
-			Crouch();		
+		if ( !bIsCrouching ) 
+		{
+			if(GCBaseCharacterMovementComponent->IsProning())
+			{
+				UnProne();
+			} else
+			{
+				Crouch();
+			}
 		}	
 	} else {
 		if(bIsCrouching)
 		{
-			Crouch();		
-		} else {
 			UnCrouch();
+		} else {
+			Crouch();
 		}	 
 	}
-}
+ }
 
 void AGCBaseCharacter::ChangeProneState()
 {
-	if(GCBaseCharacterMovementComponent->IsProning())
+	bool bProning = GCBaseCharacterMovementComponent->IsProning();
+	if(bProning)
 	{
 		UnProne();
-		return;
+	} else {
+		if(!GetCharacterMovement()->CanEverCrouch() || GetCharacterMovement()->IsCrouching())
+		{
+			Prone();
+		}
 	}
-	if(GetCharacterMovement()->CanEverCrouch() && GetCharacterMovement()->IsCrouching())
-	{		
-		Prone();						
-	} 
-		
 }
 
 void AGCBaseCharacter::StartSprint()
@@ -71,6 +79,18 @@ void AGCBaseCharacter::StartSprint()
 void AGCBaseCharacter::StopSprint()
 {
 	bIsSprintRequested = false;
+}
+
+void AGCBaseCharacter::Jump()
+{
+	if(bIsProned)
+	{
+		UnProne();
+		UnCrouch();
+	} else
+	{
+		Super::Jump();
+	}
 }
 
 void AGCBaseCharacter::Tick(float DeltaTime)
@@ -99,24 +119,54 @@ void AGCBaseCharacter::OnRep_IsProned()
 	{
 		if (bIsProned)
 		{
-			GCBaseCharacterMovementComponent->bWantsToCrouch = true;
-			GCBaseCharacterMovementComponent->Prone(true);
+			GCBaseCharacterMovementComponent->bWantsToProne = true;
+			GCBaseCharacterMovementComponent->CrouchToProne(true);
 		}
 		else
 		{
-			GCBaseCharacterMovementComponent->bWantsToCrouch = false;
-			GCBaseCharacterMovementComponent->UnProne(true);
+			GCBaseCharacterMovementComponent->bWantsToProne = false;
+			GCBaseCharacterMovementComponent->ProneToCrouch(true);
 		}
 		GCBaseCharacterMovementComponent->bNetworkUpdateReceived = true;
 	}
 }
 
-void AGCBaseCharacter::OnEndProne(float HalfHeightAdjust, float ScaledHalfHeightAdjust)
+void AGCBaseCharacter::OnEndProne(float HeightAdjust, float ScaledHeightAdjust)
 {
+	RecalculateBaseEyeHeight();
+
+	const ACharacter* DefaultChar = GetDefault<ACharacter>(GetClass());
+	if (GetMesh() && DefaultChar->GetMesh())
+	{
+		FVector& MeshRelativeLocation = GetMesh()->GetRelativeLocation_DirectMutable();
+		MeshRelativeLocation.Z = DefaultChar->GetMesh()->GetRelativeLocation().Z + HeightAdjust;
+		BaseTranslationOffset.Z = MeshRelativeLocation.Z;
+	}
+	else
+	{
+		BaseTranslationOffset.Z = DefaultChar->GetBaseTranslationOffset().Z + HeightAdjust;
+	}
+
+	K2_OnEndProne(HeightAdjust, ScaledHeightAdjust);
 }
 
-void AGCBaseCharacter::OnStartProne(float HalfHeightAdjust, float ScaledHalfHeightAdjust)
+void AGCBaseCharacter::OnStartProne(float HeightAdjust, float ScaledHeightAdjust)
 {
+	RecalculateBaseEyeHeight();
+
+	const ACharacter* DefaultChar = GetDefault<ACharacter>(GetClass());
+	if (GetMesh() && DefaultChar->GetMesh())
+	{
+		FVector& MeshRelativeLocation = GetMesh()->GetRelativeLocation_DirectMutable();
+		MeshRelativeLocation.Z = DefaultChar->GetMesh()->GetRelativeLocation().Z + HeightAdjust;
+		BaseTranslationOffset.Z = MeshRelativeLocation.Z;
+	}
+	else
+	{
+		BaseTranslationOffset.Z = DefaultChar->GetBaseTranslationOffset().Z + HeightAdjust;
+	}
+
+	K2_OnStartProne(HeightAdjust, ScaledHeightAdjust);
 }
 
 void AGCBaseCharacter::Prone(bool bClientSimulation)
@@ -126,6 +176,7 @@ void AGCBaseCharacter::Prone(bool bClientSimulation)
 		if (CanProne())
 		{
 			GCBaseCharacterMovementComponent->bWantsToProne = true;
+			GCBaseCharacterMovementComponent->bWantsToCrouch = false;
 		}
 #if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
 		else if (!GCBaseCharacterMovementComponent->CanEverProne())
@@ -141,6 +192,7 @@ void AGCBaseCharacter::UnProne(bool bClientSimulation)
 	if (GCBaseCharacterMovementComponent)
 	{
 		GCBaseCharacterMovementComponent->bWantsToProne = false;
+		GCBaseCharacterMovementComponent->bWantsToCrouch = true;
 	}
 }
 
@@ -149,9 +201,33 @@ bool AGCBaseCharacter::CanProne() const
 	return bIsCrouched && !bIsProned && GCBaseCharacterMovementComponent && GCBaseCharacterMovementComponent->CanEverProne() && GetRootComponent() && !GetRootComponent()->IsSimulatingPhysics();
 }
 
+void AGCBaseCharacter::DisplayDebug(UCanvas* Canvas, const FDebugDisplayInfo& DebugDisplay, float& YL, float& YPos)
+{
+	Super::DisplayDebug(Canvas, DebugDisplay, YL, YPos);
+	static FName NAME_Physics = FName(TEXT("Physics"));
+	if (DebugDisplay.IsDisplayOn(NAME_Physics) )
+	{
+		float Indent = 0.f;
+		FIndenter PhysicsIndent(Indent);
+		FDisplayDebugManager& DisplayDebugManager = Canvas->DisplayDebugManager;
+		const bool Crouched = GCBaseCharacterMovementComponent && GCBaseCharacterMovementComponent->IsProning();
+		FString T = FString::Printf(TEXT("Crouched %i"), Crouched);
+		DisplayDebugManager.DrawString(T, Indent);
+	}
+}
+
 bool AGCBaseCharacter::CanSprint() const
 {
-	return true;
+	return !bIsProned;
+}
+
+bool AGCBaseCharacter::CanJumpInternal_Implementation() const
+{
+	if(bIsProned)
+	{
+		return false;
+	}
+	return Super::CanJumpInternal_Implementation();
 }
 
 float AGCBaseCharacter::GetIKOffsetForASocket(const FName& SocketName) const
@@ -186,18 +262,23 @@ void AGCBaseCharacter::RefreshStamina(float DeltaTime)
 		{
 			GCBaseCharacterMovementComponent->StopSprint();
 			OnSprintEnd();
-		}	
+		}
 	} else {
 		CurrentStamina += StaminaRestoreVelocity * DeltaTime;
 		CurrentStamina = FMath::Clamp(CurrentStamina, 0.0f, MaxStamina);
 		if(CurrentStamina == MaxStamina)
 		{
 			GCBaseCharacterMovementComponent->SetIsOutOfStamina(false);
-		}				
+		}
 		if(bIsSprintRequested && CanSprint())
 		{
 			GCBaseCharacterMovementComponent->StartSprint();
 			OnSprintStart();
-		}	
+		}
+		if(!bIsSprintRequested)
+		{
+			GCBaseCharacterMovementComponent->StopSprint();
+			OnSprintEnd();
+		}
 	}	
 }

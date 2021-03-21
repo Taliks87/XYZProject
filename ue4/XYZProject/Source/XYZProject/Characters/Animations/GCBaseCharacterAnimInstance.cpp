@@ -26,6 +26,7 @@ void UGCBaseCharacterAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	Speed = CharacterMovement->Velocity.Size();
 	bIsFalling = CharacterMovement->IsFalling();
 	bIsCrouching = CharacterMovement->IsCrouching();
+	bIsProning = CharacterMovement->IsProning();
 	bIsSprinting = CharacterMovement->IsSprinting();
 	bIsOutOfStamina = CharacterMovement->IsOutOfStamina();
 

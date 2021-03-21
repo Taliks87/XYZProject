@@ -28,6 +28,7 @@ public:
 	virtual void ChangeProneState();
 	virtual void StartSprint();
 	virtual void StopSprint();
+    virtual void Jump() override;
 
 	virtual void Tick(float DeltaTime) override;
 	virtual void BeginPlay() override;
@@ -43,21 +44,29 @@ public:
 	UFUNCTION()
 	virtual void OnRep_IsProned();
 
-	virtual void OnEndProne(float HalfHeightAdjust, float ScaledHalfHeightAdjust);
+	virtual void OnEndProne(float HeightAdjust, float ScaledHeightAdjust);
 
-	virtual void OnStartProne(float HalfHeightAdjust, float ScaledHalfHeightAdjust);
+	UFUNCTION(BlueprintImplementableEvent, meta=(DisplayName="OnEndProne", ScriptName="OnEndProne"))
+	void K2_OnEndProne(float HalfHeightAdjust, float ScaledHalfHeightAdjust);
+
+	virtual void OnStartProne(float HeightAdjust, float ScaledHeightAdjust);
+	
+	UFUNCTION(BlueprintImplementableEvent, meta=(DisplayName="OnStartProne", ScriptName="OnStartProne"))
+	void K2_OnStartProne(float HalfHeightAdjust, float ScaledHalfHeightAdjust);
 
 	UFUNCTION(BlueprintCallable, Category=Character, meta=(HidePin="bClientSimulation"))
-    virtual void Prone(bool bClientSimulation = false);
+	virtual void Prone(bool bClientSimulation = false);
 
 	UFUNCTION(BlueprintCallable, Category=Character, meta=(HidePin="bClientSimulation"))
-    virtual void UnProne(bool bClientSimulation = false);
+	virtual void UnProne(bool bClientSimulation = false);
 
 	UFUNCTION(BlueprintCallable, Category=Character)
-	virtual bool CanProne() const;	
+	virtual bool CanProne() const;
 
 	UPROPERTY(BlueprintReadOnly, replicatedUsing=OnRep_IsProned, Category=Character)	
 	uint32 bIsProned:1;
+
+	virtual void DisplayDebug(class UCanvas* Canvas, const FDebugDisplayInfo& DebugDisplay, float& YL, float& YPos) override;	
 
 protected:
 
@@ -100,6 +109,8 @@ protected:
 	float IKInterpSpeed = 20.0f;
 
 	virtual bool CanSprint() const;
+
+	virtual bool CanJumpInternal_Implementation() const override;
 
 	UGCBaseCharacterMovementComponent* GCBaseCharacterMovementComponent;
 

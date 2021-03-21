@@ -10,13 +10,19 @@
 void UGCBaseCharacterMovementComponent::BeginPlay()
 {
 	Super::BeginPlay();
-	checkf( ProneCapsuleRadius < ProneCapsuleHalfHeight, TEXT("UGCBaseCharacterMovementComponent::BeginPlay Capsule radius must be less then hlaf hight"));	
+	checkf( !bCanProne || ProneCapsuleRadius <= ProneCapsuleHalfHeight, TEXT("UGCBaseCharacterMovementComponent::BeginPlay Capsule radius must be less then hlaf hight"));
 }
 
 void UGCBaseCharacterMovementComponent::PostLoad()
 {
 	Super::PostLoad();
-	GCBaseCharacterOwner = Cast<AGCBaseCharacter>(PawnOwner);	
+	GCBaseCharacterOwner = Cast<AGCBaseCharacter>(PawnOwner);
+}
+
+void UGCBaseCharacterMovementComponent::SetUpdatedComponent(USceneComponent* NewUpdatedComponent)
+{
+	Super::SetUpdatedComponent(NewUpdatedComponent);
+	GCBaseCharacterOwner = Cast<AGCBaseCharacter>(PawnOwner);
 }
 
 float UGCBaseCharacterMovementComponent::GetMaxSpeed() const
@@ -28,6 +34,9 @@ float UGCBaseCharacterMovementComponent::GetMaxSpeed() const
 	} else if(bIsOutOfStamina)
 	{
 		Result = OutOfStaminaSpeed;
+	} else if(IsProning())
+	{
+		Result = MaxProneSpeed;
 	}
 	return Result;
 }
@@ -38,77 +47,86 @@ bool UGCBaseCharacterMovementComponent::CanAttemptJump() const
 }
 
 void UGCBaseCharacterMovementComponent::UpdateCharacterStateBeforeMovement(float DeltaSeconds)
-{
-	Super::UpdateCharacterStateBeforeMovement(DeltaSeconds);
+{	
 	if (CharacterOwner->GetLocalRole() != ROLE_SimulatedProxy)
 	{
-		// Check for a change in prone state. Players toggle prone by changing bWantsToProne.
-		const bool bIsProning = IsProning();
-		if (bIsProning && (!bWantsToProne || !CanProneInCurrentState()))
+		// Check for a change stand/crouch/prone state.
+		const bool bCrouching = IsCrouching();
+		const bool bProning = IsProning();
+		const bool bStanding = !bProning && !bCrouching;
+		const bool bWantToStand = !bWantsToCrouch && !bWantsToProne;
+		if (bCrouching && (bWantToStand || !CanCrouchInCurrentState()))
 		{
-			UnProne(false);
+			UnCrouch(false);
 		}
-		else if (!bIsProning && bWantsToProne && CanProneInCurrentState())
+		else if (bStanding && bWantsToCrouch && CanCrouchInCurrentState())
 		{
-			Prone(false);
+			Crouch(false);
+		}
+		else if (bProning && (bWantsToCrouch || bWantToStand || !CanProneInCurrentState()))
+		{
+			ProneToCrouch(false);
+		}
+		else if (bCrouching && bWantsToProne && CanProneInCurrentState())
+		{
+			CrouchToProne(false);
 		}
 	}
 }
 
+//stand to crouch
 void UGCBaseCharacterMovementComponent::Crouch(bool bClientSimulation)
 {
 	Super::Crouch(bClientSimulation);
-	if (!HasValidData())
-	{
-		return;
-	}
-
-	if (!bClientSimulation && !CanCrouchInCurrentState())
-	{
-		return;
-	}
-
-	if( !bClientSimulation )
-	{
-		GCBaseCharacterOwner->bIsProned = true;
-	}
 }
 
+//crouch to stand
 void UGCBaseCharacterMovementComponent::UnCrouch(bool bClientSimulation)
 {
 	Super::UnCrouch(bClientSimulation);
 }
 
-void UGCBaseCharacterMovementComponent::Prone(bool bClientSimulation)
+void UGCBaseCharacterMovementComponent::CrouchToProne(bool bClientSimulation)
 {
 	if (!HasValidData())
 	{
 		return;
 	}
 	
-	if (!CanProneInCurrentState())
+	if (!bClientSimulation && !CanProneInCurrentState())
 	{
 		return;
 	}
 
 	// See if collision is already at desired size.
-	if (CharacterOwner->GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight() == ProneCapsuleHalfHeight
-		&& CharacterOwner->GetCapsuleComponent()->GetUnscaledCapsuleRadius() == ProneCapsuleRadius)
+	if (GCBaseCharacterOwner->GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight() == ProneCapsuleHalfHeight
+		&& GCBaseCharacterOwner->GetCapsuleComponent()->GetUnscaledCapsuleRadius() == ProneCapsuleRadius)
 	{
 		if (!bClientSimulation)
 		{
-			GCBaseCharacterOwner->bIsProned = true;
 			GCBaseCharacterOwner->bIsCrouched = false;
+			GCBaseCharacterOwner->bIsProned = true;			
 		}
 		GCBaseCharacterOwner->OnStartProne( 0.f, 0.f );
 		return;
 	}
 
+	if (bClientSimulation && CharacterOwner->GetLocalRole() == ROLE_SimulatedProxy)
+	{
+		// restore collision size before proning
+		
+		ACharacter* DefaultCharacter = GCBaseCharacterOwner->GetClass()->GetDefaultObject<ACharacter>();
+		GCBaseCharacterOwner->GetCapsuleComponent()->SetCapsuleSize(		
+			DefaultCharacter->GetCapsuleComponent()->GetUnscaledCapsuleRadius(),
+			CrouchedHalfHeight);
+		bShrinkProxyCapsule = true;
+	}
+
 	// Change collision size to proning dimensions
-	const float ComponentScale = CharacterOwner->GetCapsuleComponent()->GetShapeScale();
-	const float OldUnscaledHalfHeight = CharacterOwner->GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight();
-	const float OldUnscaledRadius = CharacterOwner->GetCapsuleComponent()->GetUnscaledCapsuleRadius();	
-	CharacterOwner->GetCapsuleComponent()->SetCapsuleSize(ProneCapsuleRadius, ProneCapsuleHalfHeight);
+	const float ComponentScale = GCBaseCharacterOwner->GetCapsuleComponent()->GetShapeScale();
+	const float OldUnscaledHalfHeight = GCBaseCharacterOwner->GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight();
+	const float OldUnscaledRadius = GCBaseCharacterOwner->GetCapsuleComponent()->GetUnscaledCapsuleRadius();	
+	GCBaseCharacterOwner->GetCapsuleComponent()->SetCapsuleSize(ProneCapsuleRadius, ProneCapsuleHalfHeight);
 	float HalfHeightAdjust = (OldUnscaledHalfHeight - ProneCapsuleHalfHeight);
 	float ScaledHalfHeightAdjust = HalfHeightAdjust * ComponentScale;
 
@@ -117,7 +135,7 @@ void UGCBaseCharacterMovementComponent::Prone(bool bClientSimulation)
 		// Proning to a larger height? (this is rare)
 		if (ProneCapsuleHalfHeight > OldUnscaledHalfHeight)
 		{
-			FCollisionQueryParams CapsuleParams(SCENE_QUERY_STAT(ProneTrace), false, CharacterOwner);
+			FCollisionQueryParams CapsuleParams(SCENE_QUERY_STAT(ProneTrace), false, GCBaseCharacterOwner);
 			FCollisionResponseParams ResponseParam;
 			InitCollisionParams(CapsuleParams, ResponseParam);
 			const bool bEncroached = GetWorld()->OverlapBlockingTestByChannel(UpdatedComponent->GetComponentLocation() - FVector(0.f,0.f,ScaledHalfHeightAdjust), FQuat::Identity,
@@ -126,26 +144,26 @@ void UGCBaseCharacterMovementComponent::Prone(bool bClientSimulation)
 			// If encroached, cancel
 			if( bEncroached )
 			{
-				CharacterOwner->GetCapsuleComponent()->SetCapsuleSize(OldUnscaledRadius, OldUnscaledHalfHeight);
+				GCBaseCharacterOwner->GetCapsuleComponent()->SetCapsuleSize(OldUnscaledRadius, OldUnscaledHalfHeight);
 				return;
 			}
 		}
-
+		bProneMaintainsBaseLocation = bCrouchMaintainsBaseLocation;
 		if (bProneMaintainsBaseLocation)
 		{
 			// Intentionally not using MoveUpdatedComponent, where a horizontal plane constraint would prevent the base of the capsule from staying at the same spot.
 			UpdatedComponent->MoveComponent(FVector(0.f, 0.f, -ScaledHalfHeightAdjust), UpdatedComponent->GetComponentQuat(), true, nullptr, EMoveComponentFlags::MOVECOMP_NoFlags, ETeleportType::TeleportPhysics);
 		}
 
-		GCBaseCharacterOwner->bIsProned = true;
 		GCBaseCharacterOwner->bIsCrouched = false;
+		GCBaseCharacterOwner->bIsProned = true;
 	}
 	
 	bForceNextFloorCheck = true;
 
 	// OnStartProne takes the change from the Default size, not the current one (though they are usually the same).
 	const float MeshAdjust = ScaledHalfHeightAdjust;
-	ACharacter* DefaultCharacter = CharacterOwner->GetClass()->GetDefaultObject<ACharacter>();
+	AGCBaseCharacter* DefaultCharacter = GCBaseCharacterOwner->GetClass()->GetDefaultObject<AGCBaseCharacter>();
 	HalfHeightAdjust = (DefaultCharacter->GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight() - ProneCapsuleHalfHeight);
 	ScaledHalfHeightAdjust = HalfHeightAdjust * ComponentScale;
 
@@ -153,7 +171,7 @@ void UGCBaseCharacterMovementComponent::Prone(bool bClientSimulation)
 	GCBaseCharacterOwner->OnStartProne( HalfHeightAdjust, ScaledHalfHeightAdjust );
 
 	// Don't smooth this change in mesh position
-	if ((bClientSimulation && CharacterOwner->GetLocalRole() == ROLE_SimulatedProxy) || (IsNetMode(NM_ListenServer) && CharacterOwner->GetRemoteRole() == ROLE_AutonomousProxy))
+	if ((bClientSimulation && GCBaseCharacterOwner->GetLocalRole() == ROLE_SimulatedProxy) || (IsNetMode(NM_ListenServer) && GCBaseCharacterOwner->GetRemoteRole() == ROLE_AutonomousProxy))
 	{
 		FNetworkPredictionData_Client_Character* ClientData = GetPredictionData_Client_Character();
 		if (ClientData)
@@ -164,74 +182,72 @@ void UGCBaseCharacterMovementComponent::Prone(bool bClientSimulation)
 	}
 }
 
-void UGCBaseCharacterMovementComponent::UnProne(bool bClientSimulation)
+void UGCBaseCharacterMovementComponent::ProneToCrouch(bool bClientSimulation)
 {
-	// const ACharacter* DefaultCharacter = GetClass()->GetDefaultObject<ACharacter>();
-	// const auto& StandingCapsuleShape = DefaultCharacter->GetCapsuleComponent()->GetCollisionShape();
-	// CharacterOwner->GetCapsuleComponent()->SetCapsuleSize(StandingCapsuleShape.GetCapsuleRadius(), StandingCapsuleShape.GetCapsuleHalfHeight());
-
 	if (!HasValidData())
 	{
 		return;
 	}
 
-	ACharacter* DefaultCharacter = CharacterOwner->GetClass()->GetDefaultObject<ACharacter>();
+	AGCBaseCharacter* DefaultCharacter = GCBaseCharacterOwner->GetClass()->GetDefaultObject<AGCBaseCharacter>();
 
 	// See if collision is already at desired size.
-	if( CharacterOwner->GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight() == DefaultCharacter->GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight() )
+	if( GCBaseCharacterOwner->GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight() == CrouchedHalfHeight )
 	{
 		if (!bClientSimulation)
 		{
-			CharacterOwner->bIsCrouched = true;
+			GCBaseCharacterOwner->bIsProned = false;
+			GCBaseCharacterOwner->bIsCrouched = true;
 		}
-		CharacterOwner->OnEndCrouch( 0.f, 0.f );
+		GCBaseCharacterOwner->OnEndProne( 0.f, 0.f );
 		return;
 	}
 
-	const float CurrentCrouchedHalfHeight = CharacterOwner->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+	const float CurrentProneHalfHeight = GCBaseCharacterOwner->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
 
-	const float ComponentScale = CharacterOwner->GetCapsuleComponent()->GetShapeScale();
-	const float OldUnscaledHalfHeight = CharacterOwner->GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight();
-	const float HalfHeightAdjust = DefaultCharacter->GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight() - OldUnscaledHalfHeight;
+	const float ComponentScale = GCBaseCharacterOwner->GetCapsuleComponent()->GetShapeScale();
+	const float OldUnscaledHalfHeight = GCBaseCharacterOwner->GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight();
+	const float HalfHeightAdjust = CrouchedHalfHeight - OldUnscaledHalfHeight;
 	const float ScaledHalfHeightAdjust = HalfHeightAdjust * ComponentScale;
 	const FVector PawnLocation = UpdatedComponent->GetComponentLocation();
 
-	// Grow to uncrouched size.
-	check(CharacterOwner->GetCapsuleComponent());
+	// Grow to unproned size.
+	check(GCBaseCharacterOwner->GetCapsuleComponent());
 
 	if( !bClientSimulation )
 	{
 		// Try to stay in place and see if the larger capsule fits. We use a slightly taller capsule to avoid penetration.
 		const UWorld* MyWorld = GetWorld();
 		const float SweepInflation = KINDA_SMALL_NUMBER * 10.f;
-		FCollisionQueryParams CapsuleParams(SCENE_QUERY_STAT(CrouchTrace), false, CharacterOwner);
+		FCollisionQueryParams CapsuleParams(SCENE_QUERY_STAT(ProneTrace), false, GCBaseCharacterOwner);
 		FCollisionResponseParams ResponseParam;
 		InitCollisionParams(CapsuleParams, ResponseParam);
 
-		// Compensate for the difference between current capsule size and standing size
-		const FCollisionShape StandingCapsuleShape = GetPawnCapsuleCollisionShape(SHRINK_HeightCustom, -SweepInflation - ScaledHalfHeightAdjust); // Shrink by negative amount, so actually grow it.
+		// Compensate for the difference between current capsule size and crouching size
+		const FCollisionShape CrouchingCapsuleShape = GetPawnCapsuleCollisionShape(SHRINK_AllCustom, -SweepInflation - ScaledHalfHeightAdjust); // Shrink by negative amount, so actually grow it.
 		const ECollisionChannel CollisionChannel = UpdatedComponent->GetCollisionObjectType();
 		bool bEncroached = true;
-
-		if (!bCrouchMaintainsBaseLocation)
+		
+		bProneMaintainsBaseLocation = bCrouchMaintainsBaseLocation;
+		if (!bProneMaintainsBaseLocation)
 		{
 			// Expand in place
-			bEncroached = MyWorld->OverlapBlockingTestByChannel(PawnLocation, FQuat::Identity, CollisionChannel, StandingCapsuleShape, CapsuleParams, ResponseParam);
+			bEncroached = MyWorld->OverlapBlockingTestByChannel(PawnLocation, FQuat::Identity, CollisionChannel, CrouchingCapsuleShape, CapsuleParams, ResponseParam);
 		
 			if (bEncroached)
 			{
 				// Try adjusting capsule position to see if we can avoid encroachment.
 				if (ScaledHalfHeightAdjust > 0.f)
 				{
-					// Shrink to a short capsule, sweep down to base to find where that would hit something, and then try to stand up from there.
+					// Shrink to a short capsule, sweep down to base to find where that would hit something, and then try to crouch from there.
 					float PawnRadius, PawnHalfHeight;
-					CharacterOwner->GetCapsuleComponent()->GetScaledCapsuleSize(PawnRadius, PawnHalfHeight);
+					GCBaseCharacterOwner->GetCapsuleComponent()->GetScaledCapsuleSize(PawnRadius, PawnHalfHeight);
 					const float ShrinkHalfHeight = PawnHalfHeight - PawnRadius;
 					const float TraceDist = PawnHalfHeight - ShrinkHalfHeight;
 					const FVector Down = FVector(0.f, 0.f, -TraceDist);
 
 					FHitResult Hit(1.f);
-					const FCollisionShape ShortCapsuleShape = GetPawnCapsuleCollisionShape(SHRINK_HeightCustom, ShrinkHalfHeight);
+					const FCollisionShape ShortCapsuleShape = GetPawnCapsuleCollisionShape(SHRINK_AllCustom, ShrinkHalfHeight);
 					const bool bBlockingHit = MyWorld->SweepSingleByChannel(Hit, PawnLocation, PawnLocation + Down, FQuat::Identity, CollisionChannel, ShortCapsuleShape, CapsuleParams);
 					if (Hit.bStartPenetrating)
 					{
@@ -239,10 +255,10 @@ void UGCBaseCharacterMovementComponent::UnProne(bool bClientSimulation)
 					}
 					else
 					{
-						// Compute where the base of the sweep ended up, and see if we can stand there
+						// Compute where the base of the sweep ended up, and see if we can crouch there
 						const float DistanceToBase = (Hit.Time * TraceDist) + ShortCapsuleShape.Capsule.HalfHeight;
-						const FVector NewLoc = FVector(PawnLocation.X, PawnLocation.Y, PawnLocation.Z - DistanceToBase + StandingCapsuleShape.Capsule.HalfHeight + SweepInflation + MIN_FLOOR_DIST / 2.f);
-						bEncroached = MyWorld->OverlapBlockingTestByChannel(NewLoc, FQuat::Identity, CollisionChannel, StandingCapsuleShape, CapsuleParams, ResponseParam);
+						const FVector NewLoc = FVector(PawnLocation.X, PawnLocation.Y, PawnLocation.Z - DistanceToBase + CrouchingCapsuleShape.Capsule.HalfHeight + SweepInflation + MIN_FLOOR_DIST / 2.f);
+						bEncroached = MyWorld->OverlapBlockingTestByChannel(NewLoc, FQuat::Identity, CollisionChannel, CrouchingCapsuleShape, CapsuleParams, ResponseParam);
 						if (!bEncroached)
 						{
 							// Intentionally not using MoveUpdatedComponent, where a horizontal plane constraint would prevent the base of the capsule from staying at the same spot.
@@ -255,8 +271,8 @@ void UGCBaseCharacterMovementComponent::UnProne(bool bClientSimulation)
 		else
 		{
 			// Expand while keeping base location the same.
-			FVector StandingLocation = PawnLocation + FVector(0.f, 0.f, StandingCapsuleShape.GetCapsuleHalfHeight() - CurrentCrouchedHalfHeight);
-			bEncroached = MyWorld->OverlapBlockingTestByChannel(StandingLocation, FQuat::Identity, CollisionChannel, StandingCapsuleShape, CapsuleParams, ResponseParam);
+			FVector CrouchingLocation = PawnLocation + FVector(0.f, 0.f, CrouchingCapsuleShape.GetCapsuleHalfHeight() - CurrentProneHalfHeight);
+			bEncroached = MyWorld->OverlapBlockingTestByChannel(CrouchingLocation, FQuat::Identity, CollisionChannel, CrouchingCapsuleShape, CapsuleParams, ResponseParam);
 
 			if (bEncroached)
 			{
@@ -266,16 +282,16 @@ void UGCBaseCharacterMovementComponent::UnProne(bool bClientSimulation)
 					const float MinFloorDist = KINDA_SMALL_NUMBER * 10.f;
 					if (CurrentFloor.bBlockingHit && CurrentFloor.FloorDist > MinFloorDist)
 					{
-						StandingLocation.Z -= CurrentFloor.FloorDist - MinFloorDist;
-						bEncroached = MyWorld->OverlapBlockingTestByChannel(StandingLocation, FQuat::Identity, CollisionChannel, StandingCapsuleShape, CapsuleParams, ResponseParam);
+						CrouchingLocation.Z -= CurrentFloor.FloorDist - MinFloorDist;
+						bEncroached = MyWorld->OverlapBlockingTestByChannel(CrouchingLocation, FQuat::Identity, CollisionChannel, CrouchingCapsuleShape, CapsuleParams, ResponseParam);
 					}
-				}				
+				}
 			}
 
 			if (!bEncroached)
 			{
 				// Commit the change in location.
-				UpdatedComponent->MoveComponent(StandingLocation - PawnLocation, UpdatedComponent->GetComponentQuat(), false, nullptr, EMoveComponentFlags::MOVECOMP_NoFlags, ETeleportType::TeleportPhysics);
+				UpdatedComponent->MoveComponent(CrouchingLocation - PawnLocation, UpdatedComponent->GetComponentQuat(), false, nullptr, EMoveComponentFlags::MOVECOMP_NoFlags, ETeleportType::TeleportPhysics);
 				bForceNextFloorCheck = true;
 			}
 		}
@@ -286,7 +302,8 @@ void UGCBaseCharacterMovementComponent::UnProne(bool bClientSimulation)
 			return;
 		}
 
-		CharacterOwner->bIsCrouched = false;
+		GCBaseCharacterOwner->bIsProned = false;
+		GCBaseCharacterOwner->bIsCrouched = true;
 	}	
 	else
 	{
@@ -294,14 +311,14 @@ void UGCBaseCharacterMovementComponent::UnProne(bool bClientSimulation)
 	}
 
 	// Now call SetCapsuleSize() to cause touch/untouch events and actually grow the capsule
-	CharacterOwner->GetCapsuleComponent()->SetCapsuleSize(DefaultCharacter->GetCapsuleComponent()->GetUnscaledCapsuleRadius(), DefaultCharacter->GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight(), true);
+	GCBaseCharacterOwner->GetCapsuleComponent()->SetCapsuleSize(DefaultCharacter->GetCapsuleComponent()->GetUnscaledCapsuleRadius(), CrouchedHalfHeight, true);
 
 	const float MeshAdjust = ScaledHalfHeightAdjust;
 	AdjustProxyCapsuleSize();
-	CharacterOwner->OnEndCrouch( HalfHeightAdjust, ScaledHalfHeightAdjust );
+	GCBaseCharacterOwner->OnEndProne( HalfHeightAdjust, ScaledHalfHeightAdjust );
 
 	// Don't smooth this change in mesh position
-	if ((bClientSimulation && CharacterOwner->GetLocalRole() == ROLE_SimulatedProxy) || (IsNetMode(NM_ListenServer) && CharacterOwner->GetRemoteRole() == ROLE_AutonomousProxy))
+	if ((bClientSimulation && GCBaseCharacterOwner->GetLocalRole() == ROLE_SimulatedProxy) || (IsNetMode(NM_ListenServer) && GCBaseCharacterOwner->GetRemoteRole() == ROLE_AutonomousProxy))
 	{
 		FNetworkPredictionData_Client_Character* ClientData = GetPredictionData_Client_Character();
 		if (ClientData)
