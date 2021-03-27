@@ -49,6 +49,8 @@ public:
 	uint8 bCanProne:1;
 	
 protected:
+	virtual void OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode) override;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character movement: sprint", meta = (ClampMin = 0.0f, UIMin = 0.0f))
 	float SprintSpeed = 1100.0f;
 
@@ -66,6 +68,12 @@ protected:
 	
 	UPROPERTY(Category="Character Movement: Walking", EditAnywhere, BlueprintReadWrite, meta=(ClampMin="0", UIMin="0"))
 	float MaxProneSpeed = 100.0f;
+
+	UPROPERTY(Category="Character Movement: Swimming", EditAnywhere, BlueprintReadWrite, meta=(ClampMin="0", UIMin="0"))
+	float SwimmingCapsuleRadius = 60.0f;
+	
+	UPROPERTY(Category="Character Movement: Swimming", EditAnywhere, BlueprintReadWrite, meta=(ClampMin="0", UIMin="0"))
+	float SwimmingCapsuleHalfHeight = 60.0f;
 
 	class AGCBaseCharacter* GCBaseCharacterOwner;
 

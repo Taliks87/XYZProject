@@ -29,6 +29,7 @@ void UGCBaseCharacterAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	bIsProning = CharacterMovement->IsProning();
 	bIsSprinting = CharacterMovement->IsSprinting();
 	bIsOutOfStamina = CharacterMovement->IsOutOfStamina();
+	bIsSwimming = CharacterMovement->IsSwimming();
 
 	RightFootEffectorLocation = FVector(CachedBaseCharacter->GetIKRightFootOffset(), 0.0f, 0.0f);
 	LeftFootEffectorLocation = FVector( - CachedBaseCharacter->GetIKLeftFootOffset(), 0.0f, 0.0f);	

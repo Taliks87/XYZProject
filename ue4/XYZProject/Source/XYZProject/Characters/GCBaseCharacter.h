@@ -31,6 +31,13 @@ public:
     virtual void Jump() override;
 
 	virtual void Tick(float DeltaTime) override;
+
+	virtual void SwimForward(float Value) {};
+	
+	virtual void SwimRight(float Value) {};
+	
+	virtual void SwimUp(float Value) {};
+	
 	virtual void BeginPlay() override;
 
 	FORCEINLINE UGCBaseCharacterMovementComponent* GetBaseCharacterMovementComponent() const { return GCBaseCharacterMovementComponent; }

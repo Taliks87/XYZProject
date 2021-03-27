@@ -46,7 +46,7 @@ void APlayerCharacter::Tick(float DeltaSeconds)
 
 void APlayerCharacter::MoveForward(float Value)
 {
-	if(!FMath::IsNearlyZero(Value, 1e-6f))
+	if((GetCharacterMovement()->IsMovingOnGround() || GetCharacterMovement()->IsFalling()) && !FMath::IsNearlyZero(Value, 1e-6f))
 	{
 		const FRotator YawRotator(0.0f, GetControlRotation().Yaw, 0.0f);
 		const FVector ForwardVector = YawRotator.RotateVector(FVector::ForwardVector);
@@ -56,7 +56,7 @@ void APlayerCharacter::MoveForward(float Value)
 
 void APlayerCharacter::MoveRight(float Value)
 {
-	if(!FMath::IsNearlyZero(Value, 1e-6f))
+	if((GetCharacterMovement()->IsMovingOnGround() || GetCharacterMovement()->IsFalling()) && !FMath::IsNearlyZero(Value, 1e-6f))
 	{
 		const FRotator YawRotator(0.0f, GetControlRotation().Yaw, 0.0f);
 		const FVector RightVector = YawRotator.RotateVector(FVector::RightVector);
@@ -94,6 +94,34 @@ void APlayerCharacter::OnEndCrouch(float HalfHeightAdjust, float ScaledHalfHeigh
 {
 	Super::OnEndCrouch(HalfHeightAdjust, ScaledHalfHeightAdjust);
 	SpringArmComponent->TargetOffset -= FVector(0.0f, 0.0f, HalfHeightAdjust);
+}
+
+void APlayerCharacter::SwimForward(float Value)
+{
+	if(GetCharacterMovement()->IsSwimming() && !FMath::IsNearlyZero(Value, 1e-6f))
+	{
+		const FRotator PitchYawRotator(GetControlRotation().Pitch, GetControlRotation().Yaw, 0.0f);
+		const FVector ForwardVector = PitchYawRotator.RotateVector(FVector::ForwardVector);
+		AddMovementInput(ForwardVector, Value);
+	}
+}
+
+void APlayerCharacter::SwimRight(float Value)
+{
+	if(GetCharacterMovement()->IsSwimming() && !FMath::IsNearlyZero(Value, 1e-6f))
+	{
+		const FRotator YawRotator(0.0f, GetControlRotation().Yaw, 0.0f);
+		const FVector RightVector = YawRotator.RotateVector(FVector::RightVector);
+		AddMovementInput(RightVector, Value);		
+	}
+}
+
+void APlayerCharacter::SwimUp(float Value)
+{
+	if(GetCharacterMovement()->IsSwimming() && !FMath::IsNearlyZero(Value, 1e-6f))
+	{		
+		AddMovementInput(FVector::UpVector, Value);		
+	}
 }
 
 bool APlayerCharacter::CanJumpInternal_Implementation() const

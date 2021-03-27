@@ -19,6 +19,9 @@ void AGCPlayerController::SetupInputComponent()
 	InputComponent->BindAxis("LookUp", this, &AGCPlayerController::LookUp);
 	InputComponent->BindAxis("TurnAtRate", this, &AGCPlayerController::TurnAtRate);
 	InputComponent->BindAxis("LookUpAtRate", this, &AGCPlayerController::LookUpAtRate);
+	InputComponent->BindAxis("SwimForward", this, &AGCPlayerController::SwimForward);
+	InputComponent->BindAxis("SwimRight", this, &AGCPlayerController::SwimRight);
+	InputComponent->BindAxis("SwimUp", this, &AGCPlayerController::SwimUp);
 	InputComponent->BindAction("Crouch", EInputEvent::IE_Pressed, this, &AGCPlayerController::ChangeCrouchState);
 	InputComponent->BindAction("Prone", EInputEvent::IE_Pressed, this, &AGCPlayerController::ChangeProneState);
 	InputComponent->BindAction("Jump", EInputEvent::IE_Pressed, this, &AGCPlayerController::Jump);
@@ -111,5 +114,29 @@ void AGCPlayerController::StopSprint()
 	if ( CachedBaseCharacter.IsValid())
 	{
 		CachedBaseCharacter->StopSprint();
+	}
+}
+
+void AGCPlayerController::SwimForward(float Value)
+{
+	if(CachedBaseCharacter.IsValid())
+	{
+		CachedBaseCharacter->SwimForward(Value);
+	}
+}
+
+void AGCPlayerController::SwimRight(float Value)
+{
+	if(CachedBaseCharacter.IsValid())
+	{
+		CachedBaseCharacter->SwimRight(Value);
+	}
+}
+
+void AGCPlayerController::SwimUp(float Value)
+{
+	if(CachedBaseCharacter.IsValid())
+	{
+		CachedBaseCharacter->SwimUp(Value);
 	}
 }
