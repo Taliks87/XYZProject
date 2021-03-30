@@ -14,8 +14,6 @@ class XYZPROJECT_API AGCBaseCharacter : public ACharacter
 
 public:
 	AGCBaseCharacter(const FObjectInitializer& ObjectInitializer);
-
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	
 	virtual void MoveForward(float Value) {};
 	virtual void MoveRight(float Value) {};
@@ -49,10 +47,7 @@ public:
 	UFUNCTION(BlueprintImplementableEvent, meta=(DisplayName="OnEndProne", ScriptName="OnEndProne"))
 	void K2_OnEndProne(float HalfHeightAdjust, float ScaledHalfHeightAdjust);
 
-	virtual void OnStartProne(float HeightAdjust, float ScaledHeightAdjust);
-	
-	UFUNCTION(BlueprintImplementableEvent, meta=(DisplayName="OnStartProne", ScriptName="OnStartProne"))
-	void K2_OnStartProne(float HalfHeightAdjust, float ScaledHalfHeightAdjust);
+	virtual void OnStartProne(float HeightAdjust, float ScaledHeightAdjust);	
 
 	UFUNCTION(BlueprintCallable, Category=Character, meta=(HidePin="bClientSimulation"))
 	virtual void Prone(bool bClientSimulation = false);

@@ -31,10 +31,12 @@ float UGCBaseCharacterMovementComponent::GetMaxSpeed() const
 	if(bIsSprinting)
 	{
 		Result = SprintSpeed;
-	} else if(bIsOutOfStamina)
+	}
+	else if(bIsOutOfStamina)
 	{
 		Result = OutOfStaminaSpeed;
-	} else if(IsProning())
+	}
+	else if(IsProning())
 	{
 		Result = MaxProneSpeed;
 	}
@@ -74,13 +76,11 @@ void UGCBaseCharacterMovementComponent::UpdateCharacterStateBeforeMovement(float
 	}
 }
 
-//stand to crouch
 void UGCBaseCharacterMovementComponent::Crouch(bool bClientSimulation)
 {
 	Super::Crouch(bClientSimulation);
 }
 
-//crouch to stand
 void UGCBaseCharacterMovementComponent::UnCrouch(bool bClientSimulation)
 {
 	Super::UnCrouch(bClientSimulation);

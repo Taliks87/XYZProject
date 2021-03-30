@@ -21,12 +21,6 @@ AGCBaseCharacter::AGCBaseCharacter(const FObjectInitializer& ObjectInitializer)
 	IKTraceDistance = GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
 }
 
-void AGCBaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	DOREPLIFETIME_CONDITION( AGCBaseCharacter, bIsProned, COND_SimulatedOnly );
-}
-
 void AGCBaseCharacter::ChangeCrouchState()
 {
 	const bool bCanEverProne = GCBaseCharacterMovementComponent->CanEverProne();
@@ -38,16 +32,21 @@ void AGCBaseCharacter::ChangeCrouchState()
 			if(GCBaseCharacterMovementComponent->IsProning())
 			{
 				UnProne();
-			} else
+			}
+			else
 			{
 				Crouch();
 			}
 		}	
-	} else {
+	}
+	else
+	{
 		if(bIsCrouching)
 		{
 			UnCrouch();
-		} else {
+		}
+		else
+		{
 			Crouch();
 		}	 
 	}
@@ -87,7 +86,8 @@ void AGCBaseCharacter::Jump()
 	{
 		UnProne();
 		UnCrouch();
-	} else
+	}
+	else
 	{
 		Super::Jump();
 	}
@@ -164,9 +164,7 @@ void AGCBaseCharacter::OnStartProne(float HeightAdjust, float ScaledHeightAdjust
 	else
 	{
 		BaseTranslationOffset.Z = DefaultChar->GetBaseTranslationOffset().Z + HeightAdjust;
-	}
-
-	K2_OnStartProne(HeightAdjust, ScaledHeightAdjust);
+	}	
 }
 
 void AGCBaseCharacter::Prone(bool bClientSimulation)
