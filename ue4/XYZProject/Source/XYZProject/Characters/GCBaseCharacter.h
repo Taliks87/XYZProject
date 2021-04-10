@@ -14,6 +14,7 @@ class XYZPROJECT_API AGCBaseCharacter : public ACharacter
 
 public:
 	AGCBaseCharacter(const FObjectInitializer& ObjectInitializer);
+	//virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	
 	virtual void MoveForward(float Value) {};
 	virtual void MoveRight(float Value) {};
