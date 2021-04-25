@@ -9,6 +9,7 @@
 #include "Engine/Canvas.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "XYZProject/Components/LedgeDetectorComponent.h"
 #include "XYZProject/Components/MovementComponents/GCBaseCharacterMovementComponent.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogCharacter, Log, All);
@@ -19,6 +20,9 @@ AGCBaseCharacter::AGCBaseCharacter(const FObjectInitializer& ObjectInitializer)
 	GCBaseCharacterMovementComponent = StaticCast<UGCBaseCharacterMovementComponent*>(GetCharacterMovement());
 	IKScale = GetActorScale3D().Z;    
 	IKTraceDistance = GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+
+	LedgeDetectorComponent = CreateDefaultSubobject<ULedgeDetectorComponent>(TEXT("LedgeDetector"));
+	
 }
 
 void AGCBaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -105,6 +109,15 @@ void AGCBaseCharacter::Tick(float DeltaTime)
 	{
 		GEngine->AddOnScreenDebugMessage(1, 1.0f, FColor::Yellow, FString::Printf(TEXT("Stamina: %.2f"), CurrentStamina));	
 	}	
+}
+
+void AGCBaseCharacter::Mantle()
+{
+	FLedgeDescription LedgeDescription;
+	if(LedgeDetectorComponent->DetectLedge(LedgeDescription))
+	{
+		//todo
+	}
 }
 
 void AGCBaseCharacter::BeginPlay()

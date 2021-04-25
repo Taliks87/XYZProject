@@ -37,6 +37,8 @@ public:
 	virtual void SwimRight(float Value) {};
 	
 	virtual void SwimUp(float Value) {};
+
+	virtual void Mantle();
 	
 	virtual void BeginPlay() override;
 
@@ -117,9 +119,12 @@ protected:
 
 	virtual bool CanSprint() const;
 
-	virtual bool CanJumpInternal_Implementation() const override;
+	virtual bool CanJumpInternal_Implementation() const override; 
 
 	UGCBaseCharacterMovementComponent* GCBaseCharacterMovementComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category= "Character | Movment")
+	class ULedgeDetectorComponent* LedgeDetectorComponent;
 
 private:
 	float GetIKOffsetForASocket(const FName& SocketName) const;

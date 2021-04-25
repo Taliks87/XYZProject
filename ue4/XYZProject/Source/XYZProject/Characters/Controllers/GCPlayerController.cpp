@@ -24,6 +24,7 @@ void AGCPlayerController::SetupInputComponent()
 	InputComponent->BindAxis("SwimUp", this, &AGCPlayerController::SwimUp);
 	InputComponent->BindAction("Crouch", EInputEvent::IE_Pressed, this, &AGCPlayerController::ChangeCrouchState);
 	InputComponent->BindAction("Prone", EInputEvent::IE_Pressed, this, &AGCPlayerController::ChangeProneState);
+	InputComponent->BindAction("Mantle", EInputEvent::IE_Pressed, this, &AGCPlayerController::Mantle);
 	InputComponent->BindAction("Jump", EInputEvent::IE_Pressed, this, &AGCPlayerController::Jump);
 	InputComponent->BindAction("Sprint", EInputEvent::IE_Pressed, this, &AGCPlayerController::StartSprint);
 	InputComponent->BindAction("Sprint", EInputEvent::IE_Released, this, &AGCPlayerController::StopSprint);
@@ -90,6 +91,14 @@ void AGCPlayerController::ChangeProneState()
 	if ( CachedBaseCharacter.IsValid())
 	{
 		CachedBaseCharacter->ChangeProneState();
+	}
+}
+
+void AGCPlayerController::Mantle()
+{
+	if( CachedBaseCharacter.IsValid())
+	{
+		CachedBaseCharacter->Mantle();
 	}
 }
 
