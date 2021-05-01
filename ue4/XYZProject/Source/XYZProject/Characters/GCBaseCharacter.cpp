@@ -58,7 +58,9 @@ void AGCBaseCharacter::ChangeProneState()
 	if(bProning)
 	{
 		UnProne();
-	} else {
+	}
+	else
+	{
 		if(!GetCharacterMovement()->CanEverCrouch() || GetCharacterMovement()->IsCrouching())
 		{
 			Prone();
