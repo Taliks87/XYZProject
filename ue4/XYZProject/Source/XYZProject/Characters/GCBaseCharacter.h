@@ -40,14 +40,11 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure)
 	FORCEINLINE float GetIKLeftFootOffset() const {	return IKLeftFootOffset; }
 
-	UFUNCTION()
-	virtual void OnRep_IsProned();
+	virtual void Crouch(bool bClientSimulation = false) override;
 
+	virtual void OnEndCrouch(float HeightAdjust, float ScaledHeightAdjust) override;
+	virtual void OnStartCrouch(float HeightAdjust, float ScaledHeightAdjust) override;
 	virtual void OnEndProne(float HeightAdjust, float ScaledHeightAdjust);
-
-	UFUNCTION(BlueprintImplementableEvent, meta=(DisplayName="OnEndProne", ScriptName="OnEndProne"))
-	void K2_OnEndProne(float HalfHeightAdjust, float ScaledHalfHeightAdjust);
-
 	virtual void OnStartProne(float HeightAdjust, float ScaledHeightAdjust);	
 
 	UFUNCTION(BlueprintCallable, Category=Character, meta=(HidePin="bClientSimulation"))
@@ -59,8 +56,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category=Character)
 	virtual bool CanProne() const;
 
-	UPROPERTY(BlueprintReadOnly, replicatedUsing=OnRep_IsProned, Category=Character)	
-	uint32 bIsProned:1;
+	UPROPERTY(BlueprintReadOnly, Category=Character)	
+	bool bIsProned;
 
 	virtual void DisplayDebug(class UCanvas* Canvas, const FDebugDisplayInfo& DebugDisplay, float& YL, float& YPos) override;	
 
@@ -113,6 +110,7 @@ protected:
 private:
 	float GetIKOffsetForASocket(const FName& SocketName) const;
 	void RefreshStamina(float DeltaTime);
+	void RecalculateMashOffset(float HeightAdjust, float ScaledHeightAdjust);
 		
 	bool bIsSprintRequested;
 	

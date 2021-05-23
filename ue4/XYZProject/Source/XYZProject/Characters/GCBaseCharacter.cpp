@@ -23,24 +23,6 @@ AGCBaseCharacter::AGCBaseCharacter(const FObjectInitializer& ObjectInitializer)
 
 void AGCBaseCharacter::ChangeCrouchState()
 {
-	const bool bCanEverProne = GCBaseCharacterMovementComponent->CanEverProne();
-	const bool bIsCrouching = GetCharacterMovement()->IsCrouching();
-	if(bCanEverProne)
-	{
-		if ( !bIsCrouching ) 
-		{
-			if(GCBaseCharacterMovementComponent->IsProning())
-			{
-				UnProne();
-			}
-			else
-			{
-				Crouch();
-			}
-		}	
-	}
-	else
-	{
 		if(bIsCrouching)
 		{
 			UnCrouch();
@@ -48,8 +30,7 @@ void AGCBaseCharacter::ChangeCrouchState()
 		else
 		{
 			Crouch();
-		}	 
-	}
+		}
  }
 
 void AGCBaseCharacter::ChangeProneState()
@@ -106,7 +87,7 @@ void AGCBaseCharacter::Tick(float DeltaTime)
 	if(CurrentStamina != MaxStamina && GEngine)
 	{
 		GEngine->AddOnScreenDebugMessage(1, 1.0f, FColor::Yellow, FString::Printf(TEXT("Stamina: %.2f"), CurrentStamina));	
-	}	
+	}
 }
 
 void AGCBaseCharacter::BeginPlay()
@@ -115,58 +96,40 @@ void AGCBaseCharacter::BeginPlay()
 	CurrentStamina = MaxStamina;
 }
 
-void AGCBaseCharacter::OnRep_IsProned()
+void AGCBaseCharacter::Crouch(bool bClientSimulation)
 {
+	Super::Crouch(bClientSimulation);
 	if (GCBaseCharacterMovementComponent)
 	{
-		if (bIsProned)
-		{
-			GCBaseCharacterMovementComponent->bWantsToProne = true;
-			GCBaseCharacterMovementComponent->CrouchToProne(true);
-		}
-		else
+		if (CanCrouch())
 		{
 			GCBaseCharacterMovementComponent->bWantsToProne = false;
-			GCBaseCharacterMovementComponent->ProneToCrouch(true);
 		}
-		GCBaseCharacterMovementComponent->bNetworkUpdateReceived = true;
 	}
+}
+
+void AGCBaseCharacter::OnEndCrouch(float HeightAdjust, float ScaledHeightAdjust)
+{
+	RecalculateBaseEyeHeight();
+	RecalculateMashOffset(-HeightAdjust, ScaledHeightAdjust);
+}
+
+void AGCBaseCharacter::OnStartCrouch(float HeightAdjust, float ScaledHeightAdjust)
+{
+	RecalculateBaseEyeHeight();
+	RecalculateMashOffset(HeightAdjust, ScaledHeightAdjust);
 }
 
 void AGCBaseCharacter::OnEndProne(float HeightAdjust, float ScaledHeightAdjust)
 {
 	RecalculateBaseEyeHeight();
-
-	const ACharacter* DefaultChar = GetDefault<ACharacter>(GetClass());
-	if (GetMesh() && DefaultChar->GetMesh())
-	{
-		FVector& MeshRelativeLocation = GetMesh()->GetRelativeLocation_DirectMutable();
-		MeshRelativeLocation.Z = DefaultChar->GetMesh()->GetRelativeLocation().Z + HeightAdjust;
-		BaseTranslationOffset.Z = MeshRelativeLocation.Z;
-	}
-	else
-	{
-		BaseTranslationOffset.Z = DefaultChar->GetBaseTranslationOffset().Z + HeightAdjust;
-	}
-
-	K2_OnEndProne(HeightAdjust, ScaledHeightAdjust);
+	RecalculateMashOffset(-HeightAdjust, ScaledHeightAdjust);	
 }
 
 void AGCBaseCharacter::OnStartProne(float HeightAdjust, float ScaledHeightAdjust)
 {
 	RecalculateBaseEyeHeight();
-
-	const ACharacter* DefaultChar = GetDefault<ACharacter>(GetClass());
-	if (GetMesh() && DefaultChar->GetMesh())
-	{
-		FVector& MeshRelativeLocation = GetMesh()->GetRelativeLocation_DirectMutable();
-		MeshRelativeLocation.Z = DefaultChar->GetMesh()->GetRelativeLocation().Z + HeightAdjust;
-		BaseTranslationOffset.Z = MeshRelativeLocation.Z;
-	}
-	else
-	{
-		BaseTranslationOffset.Z = DefaultChar->GetBaseTranslationOffset().Z + HeightAdjust;
-	}	
+	RecalculateMashOffset(HeightAdjust, ScaledHeightAdjust);
 }
 
 void AGCBaseCharacter::Prone(bool bClientSimulation)
@@ -253,7 +216,7 @@ void AGCBaseCharacter::RefreshStamina(float DeltaTime)
 	if (IsSprinting)
 	{
 		CurrentStamina -= SprintStaminaConsumptionVelocity * DeltaTime;
-		CurrentStamina = FMath::Clamp(CurrentStamina, 0.0f, MaxStamina);		
+		CurrentStamina = FMath::Clamp(CurrentStamina, 0.0f, MaxStamina);
 		if(CurrentStamina == 0.0f)
 		{
 			GCBaseCharacterMovementComponent->SetIsOutOfStamina(true);
@@ -280,5 +243,23 @@ void AGCBaseCharacter::RefreshStamina(float DeltaTime)
 			GCBaseCharacterMovementComponent->StopSprint();
 			OnSprintEnd();
 		}
-	}	
+	}
+}
+
+void AGCBaseCharacter::RecalculateMashOffset(float HeightAdjust, float ScaledHeightAdjust)
+{
+	const AGCBaseCharacter* DefaultChar = GetDefault<AGCBaseCharacter>(GetClass());
+	USkeletalMeshComponent* CharacterMesh = GetMesh();
+	if (CharacterMesh)
+	{
+		BaseTranslationOffset.Z = CharacterMesh->GetRelativeLocation().Z + HeightAdjust;
+		FVector DeltaLocation = FVector::UpVector * HeightAdjust;
+		//TODO: Fix magic bug!!!!
+		CharacterMesh->SetRelativeLocationAndRotation(CharacterMesh->GetRelativeLocation() + DeltaLocation,
+			CharacterMesh->GetRelativeRotation());
+	}
+	else
+	{
+		BaseTranslationOffset.Z = DefaultChar->GetBaseTranslationOffset().Z + HeightAdjust;
+	}
 }
