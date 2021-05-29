@@ -5,6 +5,7 @@
 
 
 #include "Components/CapsuleComponent.h"
+#include "Curves/CurveVector.h"
 #include "XYZProject/Characters/GCBaseCharacter.h"
 
 void UGCBaseCharacterMovementComponent::BeginPlay()
@@ -349,6 +350,22 @@ void UGCBaseCharacterMovementComponent::StopSprint()
 	bForceMaxAccel = 0;
 }
 
+void UGCBaseCharacterMovementComponent::StartMantle(const FMantlingMovementParameters& MantlingParameters)
+{
+	CurrentMantlingParameters = MantlingParameters;
+	SetMovementMode(EMovementMode::MOVE_Custom, (uint8)ECustomMovementMode::CMOVE_Mantling);
+}
+
+void UGCBaseCharacterMovementComponent::EndMantle()
+{
+	SetMovementMode(MOVE_Walking);
+}
+
+bool UGCBaseCharacterMovementComponent::IsMantling() const	
+{
+	return UpdatedComponent && MovementMode == MOVE_Custom && CustomMovementMode == (uint8)ECustomMovementMode::CMOVE_Mantling;
+}
+
 void UGCBaseCharacterMovementComponent::SetIsOutOfStamina(bool bIsOutOfStamina_In)
 {
 	bIsOutOfStamina = bIsOutOfStamina_In;
@@ -368,6 +385,34 @@ bool UGCBaseCharacterMovementComponent::CanProneInCurrentState() const
 	return CanCrouchInCurrentState() || IsCrouching();
 }
 
+void UGCBaseCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterations)
+{
+	switch(CustomMovementMode)
+	{
+		case (uint8)ECustomMovementMode::CMOVE_Mantling:
+		{
+			const float ElapsedTime = GetWorld()->GetTimerManager().GetTimerElapsed(MantlingTimer) + CurrentMantlingParameters.StartTime;
+
+			const FVector MantlingCurveValue = CurrentMantlingParameters.MantlingCurve->GetVectorValue(ElapsedTime);
+
+			const float PositionAlpha = MantlingCurveValue.X;
+				
+			const FVector NewLocation = FMath::Lerp(CurrentMantlingParameters.InitialLocation, CurrentMantlingParameters.TargetLocation, PositionAlpha);
+			const FRotator NewRotation = FMath::Lerp(CurrentMantlingParameters.InitialRotator, CurrentMantlingParameters.TargetRotator, PositionAlpha);
+
+			const FVector DeltaLocation = NewLocation - GetActorLocation();
+
+			FHitResult Hit;
+			SafeMoveUpdatedComponent(DeltaLocation, NewRotation, false, Hit);
+			break;	
+		}
+		default:
+			break;
+	}
+	
+	Super::PhysCustom(deltaTime, Iterations);
+}
+
 void UGCBaseCharacterMovementComponent::OnMovementModeChanged(EMovementMode PreviousMovementMode,
 	uint8 PreviousCustomMode)
 {
@@ -380,5 +425,18 @@ void UGCBaseCharacterMovementComponent::OnMovementModeChanged(EMovementMode Prev
 		ACharacter* DefaultCharacter = CharacterOwner->GetClass()->GetDefaultObject<ACharacter>();
 		CharacterOwner->GetCapsuleComponent()->SetCapsuleSize(DefaultCharacter->GetCapsuleComponent()->GetUnscaledCapsuleRadius(),
 			DefaultCharacter->GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight(), true);
+	}
+	if(MovementMode == MOVE_Custom)
+	{
+		switch(CustomMovementMode)
+		{
+			case (uint8)ECustomMovementMode::CMOVE_Mantling:
+			{				
+				GetWorld()->GetTimerManager().SetTimer(MantlingTimer, this, &UGCBaseCharacterMovementComponent::EndMantle, CurrentMantlingParameters.Duration, false);
+				break;	
+			}
+			default:
+				break;
+		}
 	}
 }

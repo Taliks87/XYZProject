@@ -11,6 +11,7 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "XYZProject/Components/LedgeDetectorComponent.h"
 #include "XYZProject/Components/MovementComponents/GCBaseCharacterMovementComponent.h"
+#include "Curves/CurveVector.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogCharacter, Log, All);
 
@@ -116,7 +117,29 @@ void AGCBaseCharacter::Mantle()
 	FLedgeDescription LedgeDescription;
 	if(LedgeDetectorComponent->DetectLedge(LedgeDescription))
 	{
-		//todo
+		FMantlingMovementParameters MantlingParameters;
+		MantlingParameters.MantlingCurve = HeightMantleSettings.MantlingCurve;
+		MantlingParameters.InitialLocation = GetActorLocation();
+		MantlingParameters.InitialRotator = GetActorRotation();
+		MantlingParameters.TargetLocation = LedgeDescription.Location;
+		MantlingParameters.TargetRotator = LedgeDescription.Rotation;
+
+		float MinRange;
+		float MaxRange;
+		HeightMantleSettings.MantlingCurve->GetTimeRange(MinRange, MaxRange);
+		
+		MantlingParameters.Duration = MaxRange - MinRange;
+		
+		float MantlingHeight = (MantlingParameters.TargetLocation - MantlingParameters.InitialLocation).Z;
+
+		//float StartTime = HeightMantleSettings.MaxHeightStartTime + (MantlingHeight - HeightMantleSettings.MinHeight) /  (HeightMantleSettings.MaxHeight - HeightMantleSettings.MinHeight) * (HeightMantleSettings.MaxHeightStartTime - HeightMantleSettings.MinHeightStartTime);
+		FVector2D SourceRange(HeightMantleSettings.MinHeight, HeightMantleSettings.MaxHeight);
+		FVector2D TargetRange(HeightMantleSettings.MinHeightStartTime, HeightMantleSettings.MaxHeightStartTime);
+		MantlingParameters.StartTime = FMath::GetMappedRangeValueClamped(SourceRange, TargetRange, MantlingHeight);
+		
+		GetBaseCharacterMovementComponent()->StartMantle(MantlingParameters);
+		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+		AnimInstance->Montage_Play(HeightMantleSettings.MantlingMontage, 1.0f, EMontagePlayReturnType::Duration, MantlingParameters.StartTime);
 	}
 }
 
@@ -235,8 +258,8 @@ bool AGCBaseCharacter::CanSprint() const
 }
 
 bool AGCBaseCharacter::CanJumpInternal_Implementation() const
-{
-	if(bIsProned)
+{	
+	if(bIsProned || GetBaseCharacterMovementComponent()->IsMantling())
 	{
 		return false;
 	}

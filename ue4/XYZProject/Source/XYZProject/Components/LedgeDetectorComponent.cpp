@@ -71,7 +71,7 @@ bool ULedgeDetectorComponent::DetectLedge(FLedgeDescription& LedgeDescription)
 		return false;
 	}
 	
-	LedgeDescription.Location = DownwardCheckHitResult.ImpactPoint;
+	LedgeDescription.Location = OverlapLocation;
 	LedgeDescription.Rotation = (ForwardCheckHitResult.ImpactNormal * FVector(-1.0f, -1.0f, 0.0f)).ToOrientationRotator();
 	
 	return true;

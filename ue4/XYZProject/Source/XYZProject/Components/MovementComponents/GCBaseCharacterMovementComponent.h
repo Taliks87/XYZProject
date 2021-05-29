@@ -3,9 +3,33 @@
 #pragma once
 
 #include "CoreMinimal.h"
+
+#include "XYZProject/Components/LedgeDetectorComponent.h"
+
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GCBaseCharacterMovementComponent.generated.h"
 
+struct FMantlingMovementParameters
+{
+	FVector InitialLocation = FVector::ZeroVector;
+	FRotator InitialRotator = FRotator::ZeroRotator;
+
+	FVector TargetLocation = FVector::ZeroVector;
+	FRotator TargetRotator = FRotator::ZeroRotator;
+
+	float Duration = 1.0f;
+	float StartTime = 0.0f;
+
+	UCurveVector* MantlingCurve;
+};
+
+UENUM(BlueprintType)
+enum class ECustomMovementMode : uint8
+{
+	CMOVE_None = 0 UMETA(DisplayName = "None"),
+	CMOVE_Mantling UMETA(DisplayName = "Mantling"),
+	CMOVE_Max UMETA(Hidden)
+};
 /**
  * 
  */
@@ -33,6 +57,10 @@ public:
 	void StartSprint();
 	void StopSprint();
 
+	void StartMantle(const FMantlingMovementParameters& MantlingParameters);
+	void EndMantle();
+	bool IsMantling() const;
+
 	FORCEINLINE bool IsOutOfStamina() const { return bIsOutOfStamina; }
 	void SetIsOutOfStamina(bool bIsOutOfStamina_In);
 
@@ -49,6 +77,8 @@ public:
 	uint8 bCanProne:1;
 	
 protected:
+	virtual void PhysCustom(float deltaTime, int32 Iterations) override;
+	
 	virtual void OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode) override;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character movement: sprint", meta = (ClampMin = 0.0f, UIMin = 0.0f))
@@ -79,5 +109,8 @@ protected:
 
 private:
 	bool bIsSprinting;
-	
+
+	FMantlingMovementParameters CurrentMantlingParameters;
+
+	FTimerHandle MantlingTimer;	
 };
