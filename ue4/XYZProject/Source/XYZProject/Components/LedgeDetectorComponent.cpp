@@ -28,25 +28,25 @@ bool ULedgeDetectorComponent::DetectLedge(FLedgeDescription& LedgeDescription)
 #else
 	bool bIsDebugEnabled = false;
 #endif
-	
+
 	float DrawTime = 2.0f;
 
 	const float BottomZOffset = 2.0f;
-	const FVector CharacterBottom = CachedCharacterOwner->GetActorLocation() - (CapsuleComponent->GetScaledCapsuleHalfHeight() - BottomZOffset) * FVector::UpVector;	
-	
+	const FVector CharacterBottom = CachedCharacterOwner->GetActorLocation() - (CapsuleComponent->GetScaledCapsuleHalfHeight() - BottomZOffset) * FVector::UpVector;
+
 	//1. Forward check
 	const float ForwardCheckCapsuleRadius = CapsuleComponent->GetScaledCapsuleRadius();
 	const float ForwardCheckCapsuleHalfHeight = (MaximumLedgeHeight - MinimumLedgeHeight) * 0.5f;
 
-	FHitResult ForwardCheckHitResult;	
+	FHitResult ForwardCheckHitResult;
 	const FVector ForwardStartLocation = CharacterBottom + (MinimumLedgeHeight + ForwardCheckCapsuleHalfHeight) * FVector::UpVector;
-	const FVector ForwardEndLocation = ForwardStartLocation + CachedCharacterOwner->GetActorForwardVector() * ForwardCheckDistance;	
+	const FVector ForwardEndLocation = ForwardStartLocation + CachedCharacterOwner->GetActorForwardVector() * ForwardCheckDistance;
 
 	if(!GCTraceUtils::SweepCapsuleSingleByChanel(GetWorld(), ForwardCheckHitResult, ForwardStartLocation, ForwardEndLocation, ForwardCheckCapsuleRadius, ForwardCheckCapsuleHalfHeight, FQuat::Identity, ECC_Climbing, QueryParams, FCollisionResponseParams::DefaultResponseParam, bIsDebugEnabled, DrawTime))
 	{
 		return false;
 	}
-	
+
 	//2. Down check
 	FHitResult DownwardCheckHitResult;
 	float DownwardSphereCheckRadius = CapsuleComponent->GetScaledCapsuleRadius();
@@ -60,20 +60,21 @@ bool ULedgeDetectorComponent::DetectLedge(FLedgeDescription& LedgeDescription)
 	{
 		return false;
 	}
-	
+
 	//3. Overlap check
 	float OverlapCapsuleRadius = CapsuleComponent->GetScaledCapsuleRadius();
 	float OverlapCapsuleHalfHeight = CapsuleComponent->GetScaledCapsuleHalfHeight();
 	float OverlapCapsuleOffset = 2.0f;
-	FVector OverlapLocation = DownwardCheckHitResult.ImpactPoint + (OverlapCapsuleHalfHeight + OverlapCapsuleOffset) * FVector::UpVector;	
+	FVector OverlapLocation = DownwardCheckHitResult.ImpactPoint + (OverlapCapsuleHalfHeight + OverlapCapsuleOffset) * FVector::UpVector;
 	if(GCTraceUtils::OverlapCapsuleAnyByProfile(GetWorld(), OverlapLocation, OverlapCapsuleRadius, OverlapCapsuleHalfHeight, FQuat::Identity, CollisionProfilePawn, QueryParams, bIsDebugEnabled, DrawTime))
 	{
 		return false;
 	}
-	
+
 	LedgeDescription.Location = OverlapLocation;
 	LedgeDescription.Rotation = (ForwardCheckHitResult.ImpactNormal * FVector(-1.0f, -1.0f, 0.0f)).ToOrientationRotator();
-	
+	LedgeDescription.LedgeNormal = ForwardCheckHitResult.ImpactNormal;
+
 	return true;
 }
 

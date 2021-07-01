@@ -17,6 +17,8 @@ struct FMantlingMovementParameters
 	FVector TargetLocation = FVector::ZeroVector;
 	FRotator TargetRotator = FRotator::ZeroRotator;
 
+	FVector InitialAnimationLocation = FVector::ZeroVector;
+
 	float Duration = 1.0f;
 	float StartTime = 0.0f;
 
@@ -31,7 +33,7 @@ enum class ECustomMovementMode : uint8
 	CMOVE_Max UMETA(Hidden)
 };
 /**
- * 
+ *
  */
 UCLASS()
 class XYZPROJECT_API UGCBaseCharacterMovementComponent : public UCharacterMovementComponent
@@ -49,10 +51,10 @@ public:
 
 	virtual void Crouch(bool bClientSimulation = false) override;//stand to crouch
 	virtual void UnCrouch(bool bClientSimulation = false) override;//crouch to stand
-	
+
 	virtual void CrouchToProne(bool bClientSimulation = false);
 	virtual void ProneToCrouch(bool bClientSimulation = false);
-	virtual bool IsProning() const;	
+	virtual bool IsProning() const;
 
 	void StartSprint();
 	void StopSprint();
@@ -75,12 +77,12 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = NavMovement, meta = (DisplayName = "Movement Capabilities | Can Prone"))
 	uint8 bCanProne:1;
-	
+
 protected:
 	virtual void PhysCustom(float deltaTime, int32 Iterations) override;
-	
+
 	virtual void OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode) override;
-	
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character movement: sprint", meta = (ClampMin = 0.0f, UIMin = 0.0f))
 	float SprintSpeed = 1100.0f;
 
@@ -92,16 +94,16 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character movement: prone", meta = (ClampMin = 0.0001f, UIMin = 0.0001f))
 	float ProneCapsuleRadius = 40.0f;
-	
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character movement: prone", meta = (ClampMin = 0.0001f, UIMin = 0.0001f))
 	float ProneCapsuleHalfHeight = 40.0f;
-	
+
 	UPROPERTY(Category="Character Movement: Walking", EditAnywhere, BlueprintReadWrite, meta=(ClampMin="0", UIMin="0"))
 	float MaxProneSpeed = 100.0f;
 
 	UPROPERTY(Category="Character Movement: Swimming", EditAnywhere, BlueprintReadWrite, meta=(ClampMin="0", UIMin="0"))
 	float SwimmingCapsuleRadius = 60.0f;
-	
+
 	UPROPERTY(Category="Character Movement: Swimming", EditAnywhere, BlueprintReadWrite, meta=(ClampMin="0", UIMin="0"))
 	float SwimmingCapsuleHalfHeight = 60.0f;
 
@@ -112,5 +114,5 @@ private:
 
 	FMantlingMovementParameters CurrentMantlingParameters;
 
-	FTimerHandle MantlingTimer;	
+	FTimerHandle MantlingTimer;
 };

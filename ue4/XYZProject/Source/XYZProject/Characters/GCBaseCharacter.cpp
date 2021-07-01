@@ -19,11 +19,11 @@ AGCBaseCharacter::AGCBaseCharacter(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer.SetDefaultSubobjectClass<UGCBaseCharacterMovementComponent>(ACharacter::CharacterMovementComponentName))
 {
 	GCBaseCharacterMovementComponent = StaticCast<UGCBaseCharacterMovementComponent*>(GetCharacterMovement());
-	IKScale = GetActorScale3D().Z;    
+	IKScale = GetActorScale3D().Z;
 	IKTraceDistance = GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
 
 	LedgeDetectorComponent = CreateDefaultSubobject<ULedgeDetectorComponent>(TEXT("LedgeDetector"));
-	
+
 }
 
 void AGCBaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -38,7 +38,7 @@ void AGCBaseCharacter::ChangeCrouchState()
 	const bool bIsCrouching = GetCharacterMovement()->IsCrouching();
 	if(bCanEverProne)
 	{
-		if ( !bIsCrouching ) 
+		if ( !bIsCrouching )
 		{
 			if(GCBaseCharacterMovementComponent->IsProning())
 			{
@@ -47,14 +47,14 @@ void AGCBaseCharacter::ChangeCrouchState()
 			{
 				Crouch();
 			}
-		}	
+		}
 	} else {
 		if(bIsCrouching)
 		{
 			UnCrouch();
 		} else {
 			Crouch();
-		}	 
+		}
 	}
  }
 
@@ -100,7 +100,7 @@ void AGCBaseCharacter::Jump()
 
 void AGCBaseCharacter::Tick(float DeltaTime)
 {
-	Super::Tick(DeltaTime);	
+	Super::Tick(DeltaTime);
 
 	IKRightFootOffset = FMath::FInterpTo(IKRightFootOffset, GetIKOffsetForASocket(RightFootSocketName), DeltaTime, IKInterpSpeed);
 	IKLeftFootOffset = FMath::FInterpTo(IKLeftFootOffset, GetIKOffsetForASocket(LeftFootSocketName), DeltaTime, IKInterpSpeed);
@@ -108,8 +108,8 @@ void AGCBaseCharacter::Tick(float DeltaTime)
 	RefreshStamina(DeltaTime);
 	if(CurrentStamina != MaxStamina && GEngine)
 	{
-		GEngine->AddOnScreenDebugMessage(1, 1.0f, FColor::Yellow, FString::Printf(TEXT("Stamina: %.2f"), CurrentStamina));	
-	}	
+		GEngine->AddOnScreenDebugMessage(1, 1.0f, FColor::Yellow, FString::Printf(TEXT("Stamina: %.2f"), CurrentStamina));
+	}
 }
 
 void AGCBaseCharacter::Mantle()
@@ -127,16 +127,18 @@ void AGCBaseCharacter::Mantle()
 		float MinRange;
 		float MaxRange;
 		HeightMantleSettings.MantlingCurve->GetTimeRange(MinRange, MaxRange);
-		
+
 		MantlingParameters.Duration = MaxRange - MinRange;
-		
+
 		float MantlingHeight = (MantlingParameters.TargetLocation - MantlingParameters.InitialLocation).Z;
 
 		//float StartTime = HeightMantleSettings.MaxHeightStartTime + (MantlingHeight - HeightMantleSettings.MinHeight) /  (HeightMantleSettings.MaxHeight - HeightMantleSettings.MinHeight) * (HeightMantleSettings.MaxHeightStartTime - HeightMantleSettings.MinHeightStartTime);
 		FVector2D SourceRange(HeightMantleSettings.MinHeight, HeightMantleSettings.MaxHeight);
 		FVector2D TargetRange(HeightMantleSettings.MinHeightStartTime, HeightMantleSettings.MaxHeightStartTime);
 		MantlingParameters.StartTime = FMath::GetMappedRangeValueClamped(SourceRange, TargetRange, MantlingHeight);
-		
+
+		MantlingParameters.InitialAnimationLocation = MantlingParameters.TargetLocation - HeightMantleSettings.AnimationCorrectionZ * FVector::UpVector + HeightMantleSettings.AnimationCorrectionXY * LedgeDescription.LedgeNormal;
+
 		GetBaseCharacterMovementComponent()->StartMantle(MantlingParameters);
 		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
 		AnimInstance->Montage_Play(HeightMantleSettings.MantlingMontage, 1.0f, EMontagePlayReturnType::Duration, MantlingParameters.StartTime);
@@ -258,7 +260,7 @@ bool AGCBaseCharacter::CanSprint() const
 }
 
 bool AGCBaseCharacter::CanJumpInternal_Implementation() const
-{	
+{
 	if(bIsProned || GetBaseCharacterMovementComponent()->IsMantling())
 	{
 		return false;
@@ -269,11 +271,11 @@ bool AGCBaseCharacter::CanJumpInternal_Implementation() const
 float AGCBaseCharacter::GetIKOffsetForASocket(const FName& SocketName) const
 {
 	float Result = 0.0f;
-    
+
 	const FVector SocketLocation = GetMesh()->GetSocketLocation(SocketName);
 	const FVector TraceStart(SocketLocation.X, SocketLocation.Y, GetActorLocation().Z);
 	const FVector TraceEnd = TraceStart - (IKTraceDistance + IKTraceExtendDistance) * FVector::UpVector;
-    
+
 	FHitResult HitResult;
 	const ETraceTypeQuery TraceType = UEngineTypes::ConvertToTraceType(ECC_Visibility);
 	if (UKismetSystemLibrary::LineTraceSingle(GetWorld(), TraceStart, TraceEnd, TraceType, true, TArray<AActor*>(), EDrawDebugTrace::ForOneFrame, HitResult, true))
@@ -289,7 +291,7 @@ void AGCBaseCharacter::RefreshStamina(float DeltaTime)
 	if (IsSprinting)
 	{
 		CurrentStamina -= SprintStaminaConsumptionVelocity * DeltaTime;
-		CurrentStamina = FMath::Clamp(CurrentStamina, 0.0f, MaxStamina);		
+		CurrentStamina = FMath::Clamp(CurrentStamina, 0.0f, MaxStamina);
 		if(CurrentStamina == 0.0f)
 		{
 			GCBaseCharacterMovementComponent->SetIsOutOfStamina(true);
@@ -316,5 +318,5 @@ void AGCBaseCharacter::RefreshStamina(float DeltaTime)
 			GCBaseCharacterMovementComponent->StopSprint();
 			OnSprintEnd();
 		}
-	}	
+	}
 }

@@ -48,7 +48,7 @@ bool UGCBaseCharacterMovementComponent::CanAttemptJump() const
 }
 
 void UGCBaseCharacterMovementComponent::UpdateCharacterStateBeforeMovement(float DeltaSeconds)
-{	
+{
 	if (CharacterOwner->GetLocalRole() != ROLE_SimulatedProxy)
 	{
 		// Check for a change stand/crouch/prone state.
@@ -93,7 +93,7 @@ void UGCBaseCharacterMovementComponent::CrouchToProne(bool bClientSimulation)
 	{
 		return;
 	}
-	
+
 	if (!bClientSimulation && !CanProneInCurrentState())
 	{
 		return;
@@ -106,7 +106,7 @@ void UGCBaseCharacterMovementComponent::CrouchToProne(bool bClientSimulation)
 		if (!bClientSimulation)
 		{
 			GCBaseCharacterOwner->bIsCrouched = false;
-			GCBaseCharacterOwner->bIsProned = true;			
+			GCBaseCharacterOwner->bIsProned = true;
 		}
 		GCBaseCharacterOwner->OnStartProne( 0.f, 0.f );
 		return;
@@ -115,9 +115,9 @@ void UGCBaseCharacterMovementComponent::CrouchToProne(bool bClientSimulation)
 	if (bClientSimulation && CharacterOwner->GetLocalRole() == ROLE_SimulatedProxy)
 	{
 		// restore collision size before proning
-		
+
 		ACharacter* DefaultCharacter = GCBaseCharacterOwner->GetClass()->GetDefaultObject<ACharacter>();
-		GCBaseCharacterOwner->GetCapsuleComponent()->SetCapsuleSize(		
+		GCBaseCharacterOwner->GetCapsuleComponent()->SetCapsuleSize(
 			DefaultCharacter->GetCapsuleComponent()->GetUnscaledCapsuleRadius(),
 			CrouchedHalfHeight);
 		bShrinkProxyCapsule = true;
@@ -126,7 +126,7 @@ void UGCBaseCharacterMovementComponent::CrouchToProne(bool bClientSimulation)
 	// Change collision size to proning dimensions
 	const float ComponentScale = GCBaseCharacterOwner->GetCapsuleComponent()->GetShapeScale();
 	const float OldUnscaledHalfHeight = GCBaseCharacterOwner->GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight();
-	const float OldUnscaledRadius = GCBaseCharacterOwner->GetCapsuleComponent()->GetUnscaledCapsuleRadius();	
+	const float OldUnscaledRadius = GCBaseCharacterOwner->GetCapsuleComponent()->GetUnscaledCapsuleRadius();
 	GCBaseCharacterOwner->GetCapsuleComponent()->SetCapsuleSize(ProneCapsuleRadius, ProneCapsuleHalfHeight);
 	float HalfHeightAdjust = (OldUnscaledHalfHeight - ProneCapsuleHalfHeight);
 	float ScaledHalfHeightAdjust = HalfHeightAdjust * ComponentScale;
@@ -159,7 +159,7 @@ void UGCBaseCharacterMovementComponent::CrouchToProne(bool bClientSimulation)
 		GCBaseCharacterOwner->bIsCrouched = false;
 		GCBaseCharacterOwner->bIsProned = true;
 	}
-	
+
 	bForceNextFloorCheck = true;
 
 	// OnStartProne takes the change from the Default size, not the current one (though they are usually the same).
@@ -228,13 +228,13 @@ void UGCBaseCharacterMovementComponent::ProneToCrouch(bool bClientSimulation)
 		const FCollisionShape CrouchingCapsuleShape = GetPawnCapsuleCollisionShape(SHRINK_AllCustom, -SweepInflation - ScaledHalfHeightAdjust); // Shrink by negative amount, so actually grow it.
 		const ECollisionChannel CollisionChannel = UpdatedComponent->GetCollisionObjectType();
 		bool bEncroached = true;
-		
+
 		bProneMaintainsBaseLocation = bCrouchMaintainsBaseLocation;
 		if (!bProneMaintainsBaseLocation)
 		{
 			// Expand in place
 			bEncroached = MyWorld->OverlapBlockingTestByChannel(PawnLocation, FQuat::Identity, CollisionChannel, CrouchingCapsuleShape, CapsuleParams, ResponseParam);
-		
+
 			if (bEncroached)
 			{
 				// Try adjusting capsule position to see if we can avoid encroachment.
@@ -305,7 +305,7 @@ void UGCBaseCharacterMovementComponent::ProneToCrouch(bool bClientSimulation)
 
 		GCBaseCharacterOwner->bIsProned = false;
 		GCBaseCharacterOwner->bIsCrouched = true;
-	}	
+	}
 	else
 	{
 		bShrinkProxyCapsule = true;
@@ -340,8 +340,8 @@ void UGCBaseCharacterMovementComponent::StartSprint()
 	if(!bIsOutOfStamina)
 	{
 		bIsSprinting = true;
-		bForceMaxAccel = 1;	
-	}	
+		bForceMaxAccel = 1;
+	}
 }
 
 void UGCBaseCharacterMovementComponent::StopSprint()
@@ -361,7 +361,7 @@ void UGCBaseCharacterMovementComponent::EndMantle()
 	SetMovementMode(MOVE_Walking);
 }
 
-bool UGCBaseCharacterMovementComponent::IsMantling() const	
+bool UGCBaseCharacterMovementComponent::IsMantling() const
 {
 	return UpdatedComponent && MovementMode == MOVE_Custom && CustomMovementMode == (uint8)ECustomMovementMode::CMOVE_Mantling;
 }
@@ -396,20 +396,26 @@ void UGCBaseCharacterMovementComponent::PhysCustom(float deltaTime, int32 Iterat
 			const FVector MantlingCurveValue = CurrentMantlingParameters.MantlingCurve->GetVectorValue(ElapsedTime);
 
 			const float PositionAlpha = MantlingCurveValue.X;
-				
-			const FVector NewLocation = FMath::Lerp(CurrentMantlingParameters.InitialLocation, CurrentMantlingParameters.TargetLocation, PositionAlpha);
+			const float XYCorrectionAlpha = MantlingCurveValue.Y;
+			const float ZCorrectionAlpha = MantlingCurveValue.Z;
+
+			FVector CorrectionInitialLocation = FMath::Lerp(CurrentMantlingParameters.InitialLocation, CurrentMantlingParameters.InitialAnimationLocation, XYCorrectionAlpha);
+			CorrectionInitialLocation.Z = FMath::Lerp(CurrentMantlingParameters.InitialLocation.Z, CurrentMantlingParameters.InitialAnimationLocation.Z, ZCorrectionAlpha);
+
+
+			const FVector NewLocation = FMath::Lerp(CorrectionInitialLocation, CurrentMantlingParameters.TargetLocation, PositionAlpha);
 			const FRotator NewRotation = FMath::Lerp(CurrentMantlingParameters.InitialRotator, CurrentMantlingParameters.TargetRotator, PositionAlpha);
 
 			const FVector DeltaLocation = NewLocation - GetActorLocation();
 
 			FHitResult Hit;
 			SafeMoveUpdatedComponent(DeltaLocation, NewRotation, false, Hit);
-			break;	
+			break;
 		}
 		default:
 			break;
 	}
-	
+
 	Super::PhysCustom(deltaTime, Iterations);
 }
 
@@ -431,9 +437,9 @@ void UGCBaseCharacterMovementComponent::OnMovementModeChanged(EMovementMode Prev
 		switch(CustomMovementMode)
 		{
 			case (uint8)ECustomMovementMode::CMOVE_Mantling:
-			{				
+			{
 				GetWorld()->GetTimerManager().SetTimer(MantlingTimer, this, &UGCBaseCharacterMovementComponent::EndMantle, CurrentMantlingParameters.Duration, false);
-				break;	
+				break;
 			}
 			default:
 				break;

@@ -13,7 +13,10 @@ struct FLedgeDescription
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ledge description")
 	FVector Location;
-	
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ledge description")
+	FVector LedgeNormal;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ledge description")
 	FRotator Rotation;
 };
@@ -25,7 +28,7 @@ class XYZPROJECT_API ULedgeDetectorComponent : public UActorComponent
 	GENERATED_BODY()
 public:
 	bool DetectLedge(OUT FLedgeDescription& LedgeDescription);
-	
+
 protected:
 	virtual void BeginPlay() override;
 

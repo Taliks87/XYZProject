@@ -17,6 +17,12 @@ struct FMantlingSettings
 	class UCurveVector* MantlingCurve;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (ClampMin = 0.0f, UIMin = 0.0f))
+	float AnimationCorrectionXY = 65.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (ClampMin = 0.0f, UIMin = 0.0f))
+	float AnimationCorrectionZ = 200.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (ClampMin = 0.0f, UIMin = 0.0f))
 	float MaxHeight = 200.0f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (ClampMin = 0.0f, UIMin = 0.0f))
@@ -40,7 +46,7 @@ public:
 	AGCBaseCharacter(const FObjectInitializer& ObjectInitializer);
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-	
+
 	virtual void MoveForward(float Value) {};
 	virtual void MoveRight(float Value) {};
 	virtual void Turn(float Value) {};
@@ -57,13 +63,13 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 	virtual void SwimForward(float Value) {};
-	
+
 	virtual void SwimRight(float Value) {};
-	
+
 	virtual void SwimUp(float Value) {};
 
 	virtual void Mantle();
-	
+
 	virtual void BeginPlay() override;
 
 	FORCEINLINE UGCBaseCharacterMovementComponent* GetBaseCharacterMovementComponent() const { return GCBaseCharacterMovementComponent; }
@@ -83,7 +89,7 @@ public:
 	void K2_OnEndProne(float HalfHeightAdjust, float ScaledHalfHeightAdjust);
 
 	virtual void OnStartProne(float HeightAdjust, float ScaledHeightAdjust);
-	
+
 	UFUNCTION(BlueprintImplementableEvent, meta=(DisplayName="OnStartProne", ScriptName="OnStartProne"))
 	void K2_OnStartProne(float HalfHeightAdjust, float ScaledHalfHeightAdjust);
 
@@ -96,7 +102,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category=Character)
 	virtual bool CanProne() const;
 
-	UPROPERTY(BlueprintReadOnly, replicatedUsing=OnRep_IsProned, Category=Character)	
+	UPROPERTY(BlueprintReadOnly, replicatedUsing=OnRep_IsProned, Category=Character)
 	uint32 bIsProned:1;
 
 	virtual void DisplayDebug(class UCanvas* Canvas, const FDebugDisplayInfo& DebugDisplay, float& YL, float& YPos) override;
@@ -112,7 +118,7 @@ protected:
 	UFUNCTION(BlueprintNativeEvent, Category = " Character | Movement")
 	void OnSprintEnd();
 	virtual void OnSprintEnd_Implementation() {};
-	
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character | Controls")
 	float BaseTurnRate = 45.0f;
 
@@ -124,10 +130,10 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character | Movement", meta = (ClampMin = 0.0f, UIMin = 0.0f))
 	float MaxStamina = 100.0f;
-	
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character | Movement", meta = (ClampMin = 0.0001f, UIMin = 0.0001f))
 	float StaminaRestoreVelocity = 20.0f;
-	
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character | Movement", meta = (ClampMin = 0.0001f, UIMin = 0.0001f))
 	float SprintStaminaConsumptionVelocity = 20.0f;
 
@@ -145,9 +151,9 @@ protected:
 
 	virtual bool CanSprint() const;
 
-	virtual bool CanJumpInternal_Implementation() const override; 
+	virtual bool CanJumpInternal_Implementation() const override;
 
-	UGCBaseCharacterMovementComponent* GCBaseCharacterMovementComponent;	
+	UGCBaseCharacterMovementComponent* GCBaseCharacterMovementComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category= "Character | Movement")
 	class ULedgeDetectorComponent* LedgeDetectorComponent;
@@ -160,9 +166,9 @@ private:
 	void ToggleLedgeDetectionDebugDraw() { bIsLedgeDetectionDebugDrawEnabled = !bIsLedgeDetectionDebugDrawEnabled; }
 	float GetIKOffsetForASocket(const FName& SocketName) const;
 	void RefreshStamina(float DeltaTime);
-		
+
 	bool bIsSprintRequested;
-	
+
 	float IKRightFootOffset = 0.0f;
 	float IKLeftFootOffset = 0.0f;
 	float IKTraceDistance = 0.0f;
