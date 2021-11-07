@@ -118,30 +118,32 @@ void AGCBaseCharacter::Mantle()
 	if(LedgeDetectorComponent->DetectLedge(LedgeDescription))
 	{
 		FMantlingMovementParameters MantlingParameters;
-		MantlingParameters.MantlingCurve = HeightMantleSettings.MantlingCurve;
 		MantlingParameters.InitialLocation = GetActorLocation();
 		MantlingParameters.InitialRotator = GetActorRotation();
 		MantlingParameters.TargetLocation = LedgeDescription.Location;
 		MantlingParameters.TargetRotator = LedgeDescription.Rotation;
 
+		float MantlingHeight = (MantlingParameters.TargetLocation - MantlingParameters.InitialLocation).Z;
+		const FMantlingSettings& MantlingSettings = GetMantlingSettings(MantlingHeight);
+		
 		float MinRange;
 		float MaxRange;
-		HeightMantleSettings.MantlingCurve->GetTimeRange(MinRange, MaxRange);
+		MantlingSettings.MantlingCurve->GetTimeRange(MinRange, MaxRange);
 
 		MantlingParameters.Duration = MaxRange - MinRange;
 
-		float MantlingHeight = (MantlingParameters.TargetLocation - MantlingParameters.InitialLocation).Z;
+		MantlingParameters.MantlingCurve = MantlingSettings.MantlingCurve;
 
 		//float StartTime = HeightMantleSettings.MaxHeightStartTime + (MantlingHeight - HeightMantleSettings.MinHeight) /  (HeightMantleSettings.MaxHeight - HeightMantleSettings.MinHeight) * (HeightMantleSettings.MaxHeightStartTime - HeightMantleSettings.MinHeightStartTime);
-		FVector2D SourceRange(HeightMantleSettings.MinHeight, HeightMantleSettings.MaxHeight);
-		FVector2D TargetRange(HeightMantleSettings.MinHeightStartTime, HeightMantleSettings.MaxHeightStartTime);
+		FVector2D SourceRange(MantlingSettings.MinHeight, MantlingSettings.MaxHeight);
+		FVector2D TargetRange(MantlingSettings.MinHeightStartTime, MantlingSettings.MaxHeightStartTime);
 		MantlingParameters.StartTime = FMath::GetMappedRangeValueClamped(SourceRange, TargetRange, MantlingHeight);
 
-		MantlingParameters.InitialAnimationLocation = MantlingParameters.TargetLocation - HeightMantleSettings.AnimationCorrectionZ * FVector::UpVector + HeightMantleSettings.AnimationCorrectionXY * LedgeDescription.LedgeNormal;
+		MantlingParameters.InitialAnimationLocation = MantlingParameters.TargetLocation - MantlingSettings.AnimationCorrectionZ * FVector::UpVector + MantlingSettings.AnimationCorrectionXY * LedgeDescription.LedgeNormal;
 
 		GetBaseCharacterMovementComponent()->StartMantle(MantlingParameters);
 		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-		AnimInstance->Montage_Play(HeightMantleSettings.MantlingMontage, 1.0f, EMontagePlayReturnType::Duration, MantlingParameters.StartTime);
+		AnimInstance->Montage_Play(MantlingSettings.MantlingMontage, 1.0f, EMontagePlayReturnType::Duration, MantlingParameters.StartTime);
 	}
 }
 
@@ -319,4 +321,9 @@ void AGCBaseCharacter::RefreshStamina(float DeltaTime)
 			OnSprintEnd();
 		}
 	}
+}
+
+const FMantlingSettings& AGCBaseCharacter::GetMantlingSettings(float LedgeHeight) const
+{
+	return LedgeHeight > LowMantleMaxHeight ? HeightMantleSettings : LowMantleSettings;
 }

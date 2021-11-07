@@ -161,6 +161,12 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character | Movement | Mantling")
 	FMantlingSettings HeightMantleSettings;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character | Movement | Mantling")
+	FMantlingSettings LowMantleSettings;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character | Movement | Mantling", meta = (ClampMin = 0.0f, UIMin = 0.0f))
+	float LowMantleMaxHeight = 125.0f;
+
 private:
 	UFUNCTION(exec)
 	void ToggleLedgeDetectionDebugDraw() { bIsLedgeDetectionDebugDrawEnabled = !bIsLedgeDetectionDebugDrawEnabled; }
@@ -177,4 +183,6 @@ private:
 	float CurrentStamina = 0.0f;
 
 	bool bIsLedgeDetectionDebugDrawEnabled = false;
+
+	const FMantlingSettings& GetMantlingSettings(float LedgeHeight) const;
 };
