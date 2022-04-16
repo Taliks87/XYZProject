@@ -13,8 +13,8 @@ APlayerCharacter::APlayerCharacter(const FObjectInitializer& ObjectInitializer)
 {
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationYaw = false;
-	bUseControllerRotationRoll = false; 
-	
+	bUseControllerRotationRoll = false;
+
 	SpringArmComponent = CreateDefaultSubobject<USpringArmComponent>(TEXT("Spring arm"));
 	SpringArmComponent->SetupAttachment(RootComponent);
 
@@ -34,7 +34,7 @@ void APlayerCharacter::BeginPlay()
 	{
 		FOnTimelineFloat TimelineCallback;
 		TimelineCallback.BindUFunction(this, FName("UpdateSpringArmLength"));
-		SprintSpringArmTimeline.AddInterpFloat(SprintSpringArmCurve, TimelineCallback);		
+		SprintSpringArmTimeline.AddInterpFloat(SprintSpringArmCurve, TimelineCallback);
 	}
 }
 
@@ -60,7 +60,7 @@ void APlayerCharacter::MoveRight(float Value)
 	{
 		const FRotator YawRotator(0.0f, GetControlRotation().Yaw, 0.0f);
 		const FVector RightVector = YawRotator.RotateVector(FVector::RightVector);
-		AddMovementInput(RightVector, Value);		
+		AddMovementInput(RightVector, Value);
 	}
 }
 
@@ -87,36 +87,40 @@ void APlayerCharacter::LookUpAtRate(float Value)
 void APlayerCharacter::OnStartCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust)
 {
 	Super::OnStartCrouch(HalfHeightAdjust, ScaledHalfHeightAdjust);
-	SpringArmComponent->TargetOffset += FVector(0.0f, 0.0f, HalfHeightAdjust);
+	APlayerCharacter* DefaultCharacter = GetClass()->GetDefaultObject<APlayerCharacter>();
+	SpringArmComponent->TargetOffset = DefaultCharacter->SpringArmComponent->TargetOffset + FVector(0.0f, 0.0f, HalfHeightAdjust);
 }
 
 void APlayerCharacter::OnEndCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust)
 {
 	Super::OnEndCrouch(HalfHeightAdjust, ScaledHalfHeightAdjust);
-	SpringArmComponent->TargetOffset -= FVector(0.0f, 0.0f, HalfHeightAdjust);
+	APlayerCharacter* DefaultCharacter = GetClass()->GetDefaultObject<APlayerCharacter>();
+	SpringArmComponent->TargetOffset = DefaultCharacter->SpringArmComponent->TargetOffset + FVector(0.0f, 0.0f, HalfHeightAdjust);
 }
 
 void APlayerCharacter::OnStartProne(float HalfHeightAdjust, float ScaledHalfHeightAdjust)
 {
-	Super::OnStartCrouch(HalfHeightAdjust, ScaledHalfHeightAdjust);
-	SpringArmComponent->TargetOffset += FVector(0.0f, 0.0f, HalfHeightAdjust);
+	Super::OnStartProne(HalfHeightAdjust, ScaledHalfHeightAdjust);
+	APlayerCharacter* DefaultCharacter = GetClass()->GetDefaultObject<APlayerCharacter>();
+	SpringArmComponent->TargetOffset = DefaultCharacter->SpringArmComponent->TargetOffset + FVector(0.0f, 0.0f, HalfHeightAdjust);
 }
 
 void APlayerCharacter::OnEndProne(float HalfHeightAdjust, float ScaledHalfHeightAdjust)
 {
-	Super::OnEndCrouch(HalfHeightAdjust, ScaledHalfHeightAdjust);
-	SpringArmComponent->TargetOffset -= FVector(0.0f, 0.0f, HalfHeightAdjust);
+	Super::OnEndProne(HalfHeightAdjust, ScaledHalfHeightAdjust);
+	APlayerCharacter* DefaultCharacter = GetClass()->GetDefaultObject<APlayerCharacter>();
+	SpringArmComponent->TargetOffset = DefaultCharacter->SpringArmComponent->TargetOffset - FVector(0.0f, 0.0f, HalfHeightAdjust);
 }
 
 bool APlayerCharacter::CanJumpInternal_Implementation() const
-{	
+{
 	const ACharacter* DefaultCharacter = GetClass()->GetDefaultObject<ACharacter>();
 	const FCollisionShape StandingCapsuleShape = DefaultCharacter->GetCapsuleComponent()->GetCollisionShape();
 	const FCollisionQueryParams CapsuleParams(SCENE_QUERY_STAT(CrouchTrace), false, this);
 	const FVector PawnLocation = GetActorLocation() + StandingCapsuleShape.GetCapsuleHalfHeight() - GetCapsuleComponent()->GetCollisionShape().GetCapsuleHalfHeight();
-	const ECollisionChannel CollisionChannel = GetCapsuleComponent()->GetCollisionObjectType();	
+	const ECollisionChannel CollisionChannel = GetCapsuleComponent()->GetCollisionObjectType();
 	const bool bIsEnoughSpace = GetWorld()->OverlapBlockingTestByChannel(PawnLocation, FQuat::Identity, CollisionChannel, StandingCapsuleShape, CapsuleParams, FCollisionResponseParams());
-	
+
 	return !bIsEnoughSpace && (bIsCrouched || Super::CanJumpInternal_Implementation());
 }
 

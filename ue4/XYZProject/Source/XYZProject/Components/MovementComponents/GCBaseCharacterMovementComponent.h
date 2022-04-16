@@ -7,7 +7,7 @@
 #include "GCBaseCharacterMovementComponent.generated.h"
 
 /**
- * 
+ *
  */
 UCLASS()
 class XYZPROJECT_API UGCBaseCharacterMovementComponent : public UCharacterMovementComponent
@@ -24,10 +24,10 @@ public:
 
 	virtual void Crouch(bool bClientSimulation = false) override;//stand to crouch
 	virtual void UnCrouch(bool bClientSimulation = false) override;//crouch to stand
-	
+
 	virtual void CrouchToProne();
 	virtual void ProneToCrouch();
-	virtual bool IsProning() const;	
+	virtual bool IsProning() const;
 
 	void StartSprint();
 	void StopSprint();
@@ -59,10 +59,10 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character movement: prone", meta = (ClampMin = 0.0001f, UIMin = 0.0001f))
 	float ProneCapsuleRadius = 40.0f;
-	
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character movement: prone", meta = (ClampMin = 0.0001f, UIMin = 0.0001f))
 	float ProneCapsuleHalfHeight = 40.0f;
-	
+
 	UPROPERTY(Category="Character Movement: Walking", EditAnywhere, BlueprintReadWrite, meta=(ClampMin="0", UIMin="0"))
 	float MaxProneSpeed = 100.0f;
 
@@ -70,5 +70,5 @@ protected:
 
 private:
 	bool bIsSprinting;
-	
+
 };
