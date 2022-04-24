@@ -87,29 +87,25 @@ void APlayerCharacter::LookUpAtRate(float Value)
 void APlayerCharacter::OnStartCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust)
 {
 	Super::OnStartCrouch(HalfHeightAdjust, ScaledHalfHeightAdjust);
-	APlayerCharacter* DefaultCharacter = GetClass()->GetDefaultObject<APlayerCharacter>();
-	SpringArmComponent->TargetOffset = DefaultCharacter->SpringArmComponent->TargetOffset + FVector(0.0f, 0.0f, HalfHeightAdjust);
+	SpringArmComponent->TargetOffset -= FVector(0.0f, 0.0f, HalfHeightAdjust);
 }
 
 void APlayerCharacter::OnEndCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust)
 {
 	Super::OnEndCrouch(HalfHeightAdjust, ScaledHalfHeightAdjust);
-	APlayerCharacter* DefaultCharacter = GetClass()->GetDefaultObject<APlayerCharacter>();
-	SpringArmComponent->TargetOffset = DefaultCharacter->SpringArmComponent->TargetOffset + FVector(0.0f, 0.0f, HalfHeightAdjust);
+	SpringArmComponent->TargetOffset -= FVector(0.0f, 0.0f, HalfHeightAdjust);
 }
 
 void APlayerCharacter::OnStartProne(float HalfHeightAdjust, float ScaledHalfHeightAdjust)
 {
 	Super::OnStartProne(HalfHeightAdjust, ScaledHalfHeightAdjust);
-	APlayerCharacter* DefaultCharacter = GetClass()->GetDefaultObject<APlayerCharacter>();
-	SpringArmComponent->TargetOffset = DefaultCharacter->SpringArmComponent->TargetOffset + FVector(0.0f, 0.0f, HalfHeightAdjust);
+	SpringArmComponent->TargetOffset -= FVector(0.0f, 0.0f, HalfHeightAdjust);
 }
 
 void APlayerCharacter::OnEndProne(float HalfHeightAdjust, float ScaledHalfHeightAdjust)
 {
 	Super::OnEndProne(HalfHeightAdjust, ScaledHalfHeightAdjust);
-	APlayerCharacter* DefaultCharacter = GetClass()->GetDefaultObject<APlayerCharacter>();
-	SpringArmComponent->TargetOffset = DefaultCharacter->SpringArmComponent->TargetOffset - FVector(0.0f, 0.0f, HalfHeightAdjust);
+	SpringArmComponent->TargetOffset -= FVector(0.0f, 0.0f, HalfHeightAdjust);
 }
 
 bool APlayerCharacter::CanJumpInternal_Implementation() const

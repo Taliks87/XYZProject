@@ -100,7 +100,7 @@ void AGCBaseCharacter::BeginPlay()
 void AGCBaseCharacter::OnEndCrouch(float HeightAdjust, float ScaledHeightAdjust)
 {
 	RecalculateBaseEyeHeight();
-	RecalculateMashOffset(0, ScaledHeightAdjust);
+	RecalculateMashOffset(HeightAdjust, ScaledHeightAdjust);
 }
 
 void AGCBaseCharacter::OnStartCrouch(float HeightAdjust, float ScaledHeightAdjust)
@@ -256,15 +256,14 @@ void AGCBaseCharacter::RefreshStamina(float DeltaTime)
 
 void AGCBaseCharacter::RecalculateMashOffset(float HeightAdjust, float ScaledHeightAdjust)
 {
-	const ACharacter* DefaultChar = GetDefault<ACharacter>(GetClass());
-	if (GetMesh() && DefaultChar->GetMesh())
+	if (GetMesh())
 	{
 		FVector& MeshRelativeLocation = GetMesh()->GetRelativeLocation_DirectMutable();
-		MeshRelativeLocation.Z = DefaultChar->GetMesh()->GetRelativeLocation().Z + HeightAdjust;
+		MeshRelativeLocation.Z -= HeightAdjust;
 		BaseTranslationOffset.Z = MeshRelativeLocation.Z;
 	}
 	else
 	{
-		BaseTranslationOffset.Z = DefaultChar->GetBaseTranslationOffset().Z + HeightAdjust;
+		BaseTranslationOffset.Z -= HeightAdjust;
 	}
 }
