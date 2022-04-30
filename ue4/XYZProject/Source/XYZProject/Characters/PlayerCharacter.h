@@ -25,6 +25,8 @@ public:
 
 	virtual void OnStartCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust) override;
 	virtual void OnEndCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust) override;
+	virtual void OnStartProne(float HalfHeightAdjust, float ScaledHalfHeightAdjust) override;
+	virtual void OnEndProne(float HalfHeightAdjust, float ScaledHalfHeightAdjust) override;
 	virtual void SwimForward(float Value) override;
 	virtual void SwimRight(float Value) override;
 	virtual void SwimUp(float Value) override;

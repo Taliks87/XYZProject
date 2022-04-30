@@ -26,46 +26,29 @@ AGCBaseCharacter::AGCBaseCharacter(const FObjectInitializer& ObjectInitializer)
 
 }
 
-void AGCBaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	DOREPLIFETIME_CONDITION( AGCBaseCharacter, bIsProned, COND_SimulatedOnly );
-}
-
 void AGCBaseCharacter::ChangeCrouchState()
 {
-	const bool bCanEverProne = GCBaseCharacterMovementComponent->CanEverProne();
 	const bool bIsCrouching = GetCharacterMovement()->IsCrouching();
-	if(bCanEverProne)
+	if (bIsCrouching)
 	{
-		if ( !bIsCrouching )
-		{
-			if(GCBaseCharacterMovementComponent->IsProning())
-			{
-				UnProne();
-			} else
-			{
-				Crouch();
-			}
-		}
-	} else {
-		if(bIsCrouching)
-		{
-			UnCrouch();
-		} else {
-			Crouch();
-		}
+		UnCrouch();
 	}
- }
+	else
+	{
+		Crouch();
+	}
+}
 
 void AGCBaseCharacter::ChangeProneState()
 {
-	bool bProning = GCBaseCharacterMovementComponent->IsProning();
-	if(bProning)
+	const bool bProning = GCBaseCharacterMovementComponent->IsProning();
+	if (bProning)
 	{
 		UnProne();
-	} else {
-		if(!GetCharacterMovement()->CanEverCrouch() || GetCharacterMovement()->IsCrouching())
+	}
+	else
+	{
+		if (!GetCharacterMovement()->CanEverCrouch() || GetCharacterMovement()->IsCrouching())
 		{
 			Prone();
 		}
@@ -88,25 +71,26 @@ void AGCBaseCharacter::StopSprint()
 
 void AGCBaseCharacter::Jump()
 {
-	if(bIsProned)
+	if (bIsProned)
 	{
 		UnProne();
 		UnCrouch();
-	} else
+	}
+	else
 	{
 		Super::Jump();
 	}
 }
 
 void AGCBaseCharacter::Tick(float DeltaTime)
-{
+{	
 	Super::Tick(DeltaTime);
 
 	IKRightFootOffset = FMath::FInterpTo(IKRightFootOffset, GetIKOffsetForASocket(RightFootSocketName), DeltaTime, IKInterpSpeed);
 	IKLeftFootOffset = FMath::FInterpTo(IKLeftFootOffset, GetIKOffsetForASocket(LeftFootSocketName), DeltaTime, IKInterpSpeed);
 
 	RefreshStamina(DeltaTime);
-	if(CurrentStamina != MaxStamina && GEngine)
+	if (CurrentStamina != MaxStamina && GEngine)
 	{
 		GEngine->AddOnScreenDebugMessage(1, 1.0f, FColor::Yellow, FString::Printf(TEXT("Stamina: %.2f"), CurrentStamina));
 	}
@@ -153,60 +137,46 @@ void AGCBaseCharacter::BeginPlay()
 	CurrentStamina = MaxStamina;
 }
 
-void AGCBaseCharacter::OnRep_IsProned()
+void AGCBaseCharacter::OnEndCrouch(float HeightAdjust, float ScaledHeightAdjust)
 {
-	if (GCBaseCharacterMovementComponent)
-	{
-		if (bIsProned)
-		{
-			GCBaseCharacterMovementComponent->bWantsToProne = true;
-			GCBaseCharacterMovementComponent->CrouchToProne(true);
-		}
-		else
-		{
-			GCBaseCharacterMovementComponent->bWantsToProne = false;
-			GCBaseCharacterMovementComponent->ProneToCrouch(true);
-		}
-		GCBaseCharacterMovementComponent->bNetworkUpdateReceived = true;
-	}
+	RecalculateBaseEyeHeight();
+	RecalculateMashOffset(HeightAdjust, ScaledHeightAdjust);
+}
+
+void AGCBaseCharacter::OnStartCrouch(float HeightAdjust, float ScaledHeightAdjust)
+{
+	RecalculateBaseEyeHeight();
+	RecalculateMashOffset(HeightAdjust, ScaledHeightAdjust);
 }
 
 void AGCBaseCharacter::OnEndProne(float HeightAdjust, float ScaledHeightAdjust)
 {
 	RecalculateBaseEyeHeight();
-
-	const ACharacter* DefaultChar = GetDefault<ACharacter>(GetClass());
-	if (GetMesh() && DefaultChar->GetMesh())
-	{
-		FVector& MeshRelativeLocation = GetMesh()->GetRelativeLocation_DirectMutable();
-		MeshRelativeLocation.Z = DefaultChar->GetMesh()->GetRelativeLocation().Z + HeightAdjust;
-		BaseTranslationOffset.Z = MeshRelativeLocation.Z;
-	}
-	else
-	{
-		BaseTranslationOffset.Z = DefaultChar->GetBaseTranslationOffset().Z + HeightAdjust;
-	}
-
-	K2_OnEndProne(HeightAdjust, ScaledHeightAdjust);
+	RecalculateMashOffset(HeightAdjust, ScaledHeightAdjust);
 }
 
 void AGCBaseCharacter::OnStartProne(float HeightAdjust, float ScaledHeightAdjust)
 {
 	RecalculateBaseEyeHeight();
+	RecalculateMashOffset(HeightAdjust, ScaledHeightAdjust);
+}
 
-	const ACharacter* DefaultChar = GetDefault<ACharacter>(GetClass());
-	if (GetMesh() && DefaultChar->GetMesh())
+void AGCBaseCharacter::Crouch(bool bClientSimulation)
+{
+	if (GCBaseCharacterMovementComponent)
 	{
-		FVector& MeshRelativeLocation = GetMesh()->GetRelativeLocation_DirectMutable();
-		MeshRelativeLocation.Z = DefaultChar->GetMesh()->GetRelativeLocation().Z + HeightAdjust;
-		BaseTranslationOffset.Z = MeshRelativeLocation.Z;
+		if (CanCrouch())
+		{
+			GCBaseCharacterMovementComponent->bWantsToProne = false;
+			GCBaseCharacterMovementComponent->bWantsToCrouch = true;
+		}
+#if !(UE_BUILD_SHIPPING || UE_BUILD_TEST)
+		else if (!GCBaseCharacterMovementComponent->CanEverCrouch())
+		{
+			UE_LOG(LogCharacter, Log, TEXT("%s is trying to crouch, but crouching is disabled on this character! (check CharacterMovement NavAgentSettings)"), *GetName());
+		}
+#endif
 	}
-	else
-	{
-		BaseTranslationOffset.Z = DefaultChar->GetBaseTranslationOffset().Z + HeightAdjust;
-	}
-
-	K2_OnStartProne(HeightAdjust, ScaledHeightAdjust);
 }
 
 void AGCBaseCharacter::Prone(bool bClientSimulation)
@@ -245,7 +215,7 @@ void AGCBaseCharacter::DisplayDebug(UCanvas* Canvas, const FDebugDisplayInfo& De
 {
 	Super::DisplayDebug(Canvas, DebugDisplay, YL, YPos);
 	static FName NAME_Physics = FName(TEXT("Physics"));
-	if (DebugDisplay.IsDisplayOn(NAME_Physics) )
+	if (DebugDisplay.IsDisplayOn(NAME_Physics))
 	{
 		float Indent = 0.f;
 		FIndenter PhysicsIndent(Indent);
@@ -282,7 +252,7 @@ float AGCBaseCharacter::GetIKOffsetForASocket(const FName& SocketName) const
 	const ETraceTypeQuery TraceType = UEngineTypes::ConvertToTraceType(ECC_Visibility);
 	if (UKismetSystemLibrary::LineTraceSingle(GetWorld(), TraceStart, TraceEnd, TraceType, true, TArray<AActor*>(), EDrawDebugTrace::ForOneFrame, HitResult, true))
 	{
-	 	Result = (TraceEnd.Z - HitResult.Location.Z) / IKScale + IKTraceExtendDistance;
+		Result = (TraceEnd.Z - HitResult.Location.Z) / IKScale + IKTraceExtendDistance;
 	}
 	return Result;
 }
@@ -298,28 +268,43 @@ void AGCBaseCharacter::RefreshStamina(float DeltaTime)
 		{
 			GCBaseCharacterMovementComponent->SetIsOutOfStamina(true);
 		}
-		if(!bIsSprintRequested)
+		if (!bIsSprintRequested)
 		{
 			GCBaseCharacterMovementComponent->StopSprint();
 			OnSprintEnd();
 		}
-	} else {
+	}
+	else {
 		CurrentStamina += StaminaRestoreVelocity * DeltaTime;
 		CurrentStamina = FMath::Clamp(CurrentStamina, 0.0f, MaxStamina);
-		if(CurrentStamina == MaxStamina)
+		if (CurrentStamina == MaxStamina)
 		{
 			GCBaseCharacterMovementComponent->SetIsOutOfStamina(false);
 		}
-		if(bIsSprintRequested && CanSprint())
+		if (bIsSprintRequested && CanSprint())
 		{
 			GCBaseCharacterMovementComponent->StartSprint();
 			OnSprintStart();
 		}
-		if(!bIsSprintRequested)
+		if (!bIsSprintRequested)
 		{
 			GCBaseCharacterMovementComponent->StopSprint();
 			OnSprintEnd();
 		}
+	}
+}
+
+void AGCBaseCharacter::RecalculateMashOffset(float HeightAdjust, float ScaledHeightAdjust)
+{
+	if (GetMesh())
+	{
+		FVector& MeshRelativeLocation = GetMesh()->GetRelativeLocation_DirectMutable();
+		MeshRelativeLocation.Z -= HeightAdjust;
+		BaseTranslationOffset.Z = MeshRelativeLocation.Z;
+	}
+	else
+	{
+		BaseTranslationOffset.Z -= HeightAdjust;
 	}
 }
 

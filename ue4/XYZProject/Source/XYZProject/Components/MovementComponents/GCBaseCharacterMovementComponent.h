@@ -42,7 +42,6 @@ class XYZPROJECT_API UGCBaseCharacterMovementComponent : public UCharacterMoveme
 
 public:
 	virtual void BeginPlay() override;
-	virtual void PostLoad() override;
 	virtual void SetUpdatedComponent(USceneComponent* NewUpdatedComponent) override;
 	FORCEINLINE bool IsSprinting() const { return bIsSprinting;	}
 	virtual float GetMaxSpeed() const override;
@@ -52,8 +51,8 @@ public:
 	virtual void Crouch(bool bClientSimulation = false) override;//stand to crouch
 	virtual void UnCrouch(bool bClientSimulation = false) override;//crouch to stand
 
-	virtual void CrouchToProne(bool bClientSimulation = false);
-	virtual void ProneToCrouch(bool bClientSimulation = false);
+	virtual void CrouchToProne();
+	virtual void ProneToCrouch();
 	virtual bool IsProning() const;
 
 	void StartSprint();
@@ -70,13 +69,13 @@ public:
 	virtual bool CanProneInCurrentState() const;
 
 	UPROPERTY(Category="Character Movement (General Settings)", VisibleInstanceOnly, BlueprintReadOnly)
-	uint8 bWantsToProne:1;
+	bool bWantsToProne = false;
 
 	UPROPERTY(Category="Character Movement (General Settings)", VisibleInstanceOnly, BlueprintReadWrite, AdvancedDisplay)
-	uint8 bProneMaintainsBaseLocation:1;
+	bool bProneMaintainsBaseLocation = true;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = NavMovement, meta = (DisplayName = "Movement Capabilities | Can Prone"))
-	uint8 bCanProne:1;
+	bool bCanProne = true;
 
 protected:
 	virtual void PhysCustom(float deltaTime, int32 Iterations) override;
